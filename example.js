@@ -3,23 +3,30 @@ console.log('running examples');
 Class(function Animal(){ with(this){
 
   def(function bark(){
+    console.log('bark bark');
+  });
+  aliasMethod('ruf','bark');
+  
+  def(function bark3Times(){
+    this.bark(); this.bark(); this.bark();
+  });
+  
+  def(function getMyClass(){
+    
+  })
 
+  self.def(function findByName(){
+    console.log('finding by name')
   });
 
-  self.def(function find(){});
-
-  aliasMethod('ruf','bark');
-
   Class('Rider',{
-    setName:function(){
-
+    setName:function(name){
+      console.log('setting name to '+name);
     }
   });
 
 
 }});
-
-
 
 
 // Class('Frog', superClass, methods, methods)

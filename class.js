@@ -52,6 +52,8 @@ Object.define = function defineMethod(properties){
   }
 
 
+  //Class('Name',{..methods..},{..more methods..});
+  //Class(function Name(){..},{..more methods..});
   this.Class = function Class(className, methods){
     // preventing inappropriate usage
     if (this instanceof Class) throw new TypeError('Class is not a constructor');
@@ -77,6 +79,8 @@ Object.define = function defineMethod(properties){
       console.info('Creating class ',fullClassName);
       eval('this[className] = function '+fullClassName+'(){ if (this.initialize) return this.initialize.apply(this, arguments); };');
       var klass = this[className];
+      klass.prototype.constructor = klass;
+      klass.prototype.class = klass;  //reserved work? broken in what browsers?
       klass.className = fullClassName;
       klass.Class = window.Class;
     }
