@@ -20,7 +20,7 @@ Function.prototype.title = function(){
 // Object.define.apply(yourObject, property, [property])
 Object.define = function defineMethod(properties){
   if (this == Object) throw new Error('Usage: Object.define.apply(...)');
-  
+
   for (var i = arguments.length - 1; i >= 0; i--){
     var property = arguments[i];
     console.log(typeof property)
@@ -38,7 +38,18 @@ Object.define = function defineMethod(properties){
 
 
 (function() {
-  
+
+  var CLASS_NAME_DELIMITER = '$$';
+
+  Function.prototype.parent = function parent(){
+    if (this.className && this.className.indexOf(CLASS_NAME_DELIMITER) != -1)
+      return this.className.replace(/\$\$\w+$/,'').toClass(); //TODO fix hard coding of $$ here
+  }
+  String.prototype.toClass = function toClass(){
+    try{ return eval(this.replace(CLASS_NAME_DELIMITER,'.')); } catch(e){}
+  }
+
+
   this.Class = function Class(className, methods){
     // preventing unauthorized usage
     if (this instanceof Class) throw new TypeError('Class is not a constructor');
