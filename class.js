@@ -37,6 +37,8 @@ Object.define = function defineMethod(properties){
 };
 
 
+
+
 (function() {
 
   var CLASS_NAME_DELIMITER = '$$';
@@ -51,7 +53,7 @@ Object.define = function defineMethod(properties){
 
 
   this.Class = function Class(className, methods){
-    // preventing unauthorized usage
+    // preventing inappropriate usage
     if (this instanceof Class) throw new TypeError('Class is not a constructor');
     if (this != window && (typeof this != 'function' || typeof this.className == 'undefined')) throw new Error('Class can only be applied to classes or window');
 
@@ -59,85 +61,62 @@ Object.define = function defineMethod(properties){
 
     var block;
     if (typeof className == 'function')
-      block = className, className = block.argumentNames()[0];
+      block = className, className = block.title();
 
+    // approving className and discovering fullClassName
+    if (!className || className === '') throw new Error('expected function to be named')
     if (className[0] != className[0].toUpperCase()) throw new Error('class names must be capitalized');
     if (className.indexOf('_') != -1) throw new Error('class names may not have a _');
-    var fullClassName = (this == window) ? className : (typeof this.className != 'undefined') ? this.className+'__'+className : false;
+    var fullClassName = (this == window) ? className : (typeof this.className != 'undefined') ? this.className+'$$'+className : false;
 
-    console.info('Creating class ',fullClassName);
-
-    eval('this[className] = function '+fullClassName+'(){ if (this.initialize) return this.initialize.apply(this, arguments); };');
-    var klass = this[className];
-    klass.className = fullClassName;
-    klass.Class = window.Class;
-
-    if (block)
-      block(new ClassDefiner(klass));
+    var klass;
+    try{ eval('klass = '+fullClassName.replace('$$','.')); }catch(e){}
+    if (klass && klass.className == className){
+      console.log('reopening class ',fullClassName);
+    }else{
+      console.info('Creating class ',fullClassName);
+      eval('this[className] = function '+fullClassName+'(){ if (this.initialize) return this.initialize.apply(this, arguments); };');
+      var klass = this[className];
+      klass.className = fullClassName;
+      klass.Class = window.Class;
+    }
+    if (block) new ClassModifier(klass, block);
   }
-  
-  function ClassDefiner(klass){
-    this.klass = klass;
-    this.Class = function(){ Class.apply(klass,arguments); };
-    // this.self == //something fooful =P
-  }
-  ClassDefiner.prototype.def = function def(method){
-    for (var i = arguments.length - 1; i >= 0; i--){
-      var method = arguments[i];
+
+
+
+  function objectModifier(object){
+    this.object = object;
+  };
+
+  Object.extend(objectModifier.prototype,{
+    def: function def(method){
       // if (method != 'private' || method != 'public'); TODO when private/public is built
       var title = method.title();
       if (!title) throw new Error("function without title passed to def\n"+method.toString());
-      Object.define.apply(this.klass.prototype,[method]);
-    };
+      this.object[title] = method;
+    },
+    aliasMethod: function(alias,method){
+      console.log('aliasing '+alias+' -> '+method);
+      eval('this.object[alias] = function '+alias+'(){ this.'+method+'(); }');
+    },
+    // define_method: ClassDefiner.prototype.def;
+    // define_methods: function(){
+    //   for (var i = arguments.length - 1; i >= 0; i--){
+    //     this.def(arguments[i]);
+    //   };
+    // };
+  });
 
+  function ClassModifier(klass,block){
+    this.object = klass.prototype;
+    this.self = new objectModifier(klass);
+    this.Class = function(){ Class.apply(klass,arguments); };
+    // this.self == //something fooful =P // so we can do things like self.def(function methodName(){});
+    block.apply(this,[]);
   }
-  ClassDefiner.prototype.define_method = ClassDefiner.prototype.define_methods = ClassDefiner.prototype.def;
-  
+  ClassModifier.prototype = new objectModifier();
+
 })();
-
-
-
-
-
-Class(function(Rupture){
-  Rupture.define_methods(
-    function alpheBear(){},
-    function mamaDuck(){}
-  )
-  function createFrogClass(){
-    Class('Fro')
-  }
-  var love = 5;
-  with(Rupture){
-    Class('Donkey',{a:def});
-    var ass = 3;
-    def(createFrogClass);
-    // self.def(function thisIsAClassMehod(){});
-  }
-  
-  this.defineMethods(
-    function alpheBear(){},
-    function mamaDuck(){}
-  );
-  
-  with(this){
-    def()
-  }
-  
-});
-
-console.dir(Rupture);
-
-function Module(){
-  Object.define.apply(this,arguments);
-};
-
-new Module(
-  {someMethod: function(){}},
-  function someOtherMethod(){},
-  {version:2.4}  
-);
-
-
 
 
