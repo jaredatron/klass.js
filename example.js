@@ -2,21 +2,17 @@ console.log('running examples');
 
 Class(function Animal(){ with(this){
 
-  def(function bark(){
-    console.log('bark bark');
+  def(function speak(){
+    console.log('it speaks!');
   });
-  aliasMethod('ruf','bark');
+  aliasMethod('talk','speak');
   
-  def(function bark3Times(){
-    this.bark(); this.bark(); this.bark();
+  def(function whatAreYou(){
+    return this.class;
   });
   
-  def(function getMyClass(){
-    
-  })
-
-  self.def(function findByName(){
-    console.log('finding by name')
+  self.def(function all(){
+    console.log('returning all animals')
   });
 
   Class('Rider',{
@@ -27,6 +23,49 @@ Class(function Animal(){ with(this){
 
 
 }});
+
+console.log(new Animal().class);
+console.log(new Animal().class.name);
+
+
+Animal.classEval(function(){
+  
+});
+
+Animal.addInstanceMethods(
+  function someMethod(){},
+  {
+    someOtherMethod: function(){},
+    someOtherMethods: function(){},
+  }
+);
+
+Animal.addClassMethods(
+  function someMethod(){},
+  {
+    someOtherMethod: function(){},
+    someOtherMethods: function(){},
+  }
+);
+
+
+
+
+// Class('Dog', Animal, function(){
+//   def(function)
+//   
+// });
+// 
+// Class(function Dog(){
+//   
+// })
+
+
+
+
+
+
+
 
 
 // Class('Frog', superClass, methods, methods)

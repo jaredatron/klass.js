@@ -51,6 +51,19 @@ Object.define = function defineMethod(properties){
     try{ return eval(this.replace(CLASS_NAME_DELIMITER,'.')); } catch(e){}
   }
 
+  function createClass(className){
+    var fullClassName = (this == window) ? className : (typeof this.className != 'undefined') ? this.className+'$$'+className : false;
+    console.info('Creating class ',fullClassName);
+    eval('this[className] = function '+fullClassName+'(){ if (this.initialize) return this.initialize.apply(this, arguments); };');
+    var klass = this[className];
+    klass.class = Class;
+    klass.prototype.constructor = klass;
+    klass.prototype.class = klass;  //reserved work? broken in what browsers?
+    klass.className = fullClassName;
+    klass.Class = window.Class;
+    return klass;
+  };
+
 
   //Class('Name',{..methods..},{..more methods..});
   //Class(function Name(){..},{..more methods..});
@@ -65,24 +78,17 @@ Object.define = function defineMethod(properties){
     if (typeof className == 'function')
       block = className, className = block.title();
 
-    // approving className and discovering fullClassName
+    // approving className
     if (!className || className === '') throw new Error('expected function to be named')
     if (className[0] != className[0].toUpperCase()) throw new Error('class names must be capitalized');
     if (className.indexOf('_') != -1) throw new Error('class names may not have a _');
-    var fullClassName = (this == window) ? className : (typeof this.className != 'undefined') ? this.className+'$$'+className : false;
 
     var klass;
     try{ eval('klass = '+fullClassName.replace('$$','.')); }catch(e){}
     if (klass && klass.className == className){
-      console.log('reopening class ',fullClassName);
+      console.log('reopening class ',klass.className);
     }else{
-      console.info('Creating class ',fullClassName);
-      eval('this[className] = function '+fullClassName+'(){ if (this.initialize) return this.initialize.apply(this, arguments); };');
-      var klass = this[className];
-      klass.prototype.constructor = klass;
-      klass.prototype.class = klass;  //reserved work? broken in what browsers?
-      klass.className = fullClassName;
-      klass.Class = window.Class;
+      klass = createClass.apply(this,[className]);
     }
     if (block) new ClassModifier(klass, block);
   }
