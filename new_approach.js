@@ -5,36 +5,46 @@ Object.cloneWithInheritance = function cloneWithInheritance(source){
 };
 
 
+Function.prototype.applyNew = function applyNew(a){
+  if (typeof a === 'undefined' || !('length' in a)) 
+    throw new TypeError("first argument to applyNew must be an array");
+  var args = '';
+  for (var i=0; i < a.length; i++) args += ', a['+i+']';
+  return eval('new this('+args.slice(2)+');');
+};
+
+
 Klass = function Klass(){
   var args = $A(arguments), klass = this, superklass;
 
   if (arguments[0] instanceof Klass) superklass = args.shift();
-  
-  // klass.klass = Klass;
   
   if (superklass){
     function constructor(){};
     constructor.prototype = superklass;
     klass = new constructor;
     klass.superklass = superklass;
-    klass.subklasses = [];
     superklass.subklasses.push(klass);
-  } 
+  }
 
-  // consider making instance a function  new Frog.prototype =AKA= Frog.create()
-  // then here we just do something like 
-  //   klass.prototype = function instance(); 
-  //   klass.prototype.prototype = Object.cloneWithInheritance(klass.prototype);
-  klass.prototype = Object.cloneWithInheritance(klass.prototype);
-  klass.prototype.klass = klass;
+  klass.subklasses = [];
+  
+  function KlassInstance(){
+    if ('initialize' in this) return this.initialize.apply(this,arguments);
+  };
+  KlassInstance.prototype = Object.cloneWithInheritance(klass.instance.prototype);
+  KlassInstance.prototype.klass = klass;
+  klass.instance = KlassInstance;
+  
   for (var i=0; i < args.length; i++) {
     var methods = args[i];
     if (Object.isFunction(methods)){
       klass.klassName = methods.name ? methods.name.capitalize() : 'anonymous'; //TODO replace capitalize
       methods = methods.bind(klass)();
     }
-    Object.extend(klass.prototype,methods);
+    Object.extend(klass.instance.prototype,methods);
   };
+  console.log('NEW KLASS: ',klass);
   return klass;
 };
 
@@ -42,54 +52,41 @@ Klass = function Klass(){
 
 Klass.prototype = {
   klass: Klass,
-  klassName: 'Klass',
+  klassName:  null,
   superklass: null,
-  subklasses: [],
-  create: function create(){
-    function instance(args){
-      this.initialize.apply(this,args);
-    }
-    instance.prototype = this.prototype;
-    return new instance(arguments);
+  subklasses: null,
+  create: function create(){    
+    return this.instance.applyNew(arguments);
   },
-  
-  prototype: {
-    initialize: function initialize(){
-      console.log('initializing',this,arguments);
-    },
-    inspect: function(){
-      return '<#'+this.klass.klassName+' >';
-    },
-    
-    isA: function(klass){
-      if (!klass || !klass.prototype) return false;
-      function constructor(){};
-      constructor.prototype = klass.prototype;
-      return (this instanceof constructor);
-    }
+  include: function(methods){
+    Object.extend(this.instance.prototype, methods);
+    return this;
   },
-  
   extend: function(methods){
     return Object.extend(this, methods);
   },
-  
-  include: function(methods){
-    Object.extend(this.prototype, methods);
-    return this;
-  },
-
   inspect: function(){
     return '<#Klass:'+this.klassName+'>';
   },
   toString: function toString(){
     return this.inspect();
   },
-  
   defineInstanceMethod: function(method){
-    this.prototype[method.name] = method;
+    this.instance.prototype[method.name] = method;
     return this;
   }
+};
 
+Klass.prototype.instance = function KlassInstance(){};
+
+Klass.prototype.instance.prototype = {
+  inspect: function(){
+    return '<#'+this.klass.klassName+' >';
+  },
+  isA: function(klass){
+    if (!(klass instanceof Klass)) return false;
+    return (this instanceof klass.instance);
+  }
 };
 
 
@@ -126,17 +123,26 @@ Frog = new Klass(function Frog(){ with(this){
   };
 }});
 
+test('Frog.superklass === null');
+test('Frog.subklasses instanceof Array');
+test('Frog.subklasses.length === 0');
+
 bob = Frog.create();
 test('bob.isA(Frog)');
+test('bob.klass === Frog');
+test('Frog.subklasses.length === 0');
 
 Toad = new Klass(function Toad(){});
 sam = Toad.create();
 test('sam.isA(Toad)');
 test('!bob.isA(Toad)');
 
+test('Frog.subklasses.length === 0');
+test('Toad.subklasses.length === 0');
 
-Frog.prototype.leap = function leap(){};
-Toad.prototype.hop = function hop(){};
+
+Frog.instance.prototype.leap = function leap(){};
+Toad.instance.prototype.hop = function hop(){};
 
 test('"leap" in bob');
 test('"hop" in sam');
@@ -155,6 +161,8 @@ HugeFrog = new Klass(Frog, function HugeFrog(){
 });
 
 test('HugeFrog.superklass === Frog');
+test('Frog.subklasses.length === 1');
+test('HugeFrog.subklasses.length === 0');
 test('"find" in HugeFrog');
 
 alph = HugeFrog.create();
@@ -170,20 +178,37 @@ Dies = {
 };
 
 Dog = new Klass(function Dog(){
-  
   this.include(Dies);
-  
   return {
     initialize: function(name){
-      console.log('init new Dog',arguments);
       this.name = name;
     }
-  };
-  
+  };  
 });
 
 test('"die" in Dog.create()');
 test('Dog.create("walter").name == "walter"');
 
+
+
+var Wolf = new Klass(function Wolf(){
+  return{
+    initialize: function(name){
+      this.name = name;
+    }
+  }
+});
+var Sheep = new Klass(function Sheep(){
+  return{
+    initialize: function(){
+      return Wolf.create.apply(Wolf, arguments);
+    }
+  }
+});
+
+var willber = Sheep.create("willber");
+
+test('willber.isA(Wolf)');
+test('!(willber.isA(Sheep))');
 
 testResults();
