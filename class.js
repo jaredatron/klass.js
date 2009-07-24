@@ -9,18 +9,10 @@ Function.prototype.getName = function(){
 
 (function() {
   
-  String.subclasses || (String.subclasses = []);
-  
-  var ClassName = this.Class.create(String,{
-    initialize: function(klass) {
-      this.klass = klass;
-    },
-    valueOf: function(){
-      return (this.klass.parent && this.klass.parent !== window) ? [this.klass.parent.className, this.klass.getName()].join('.') : this.klass.getName();
-    },
-    toString: function(){ return this.valueOf(); },
-    inspect: function inspect(){ return '#<ClassName:'+this.toString()+'>'; }
-  });
+  function ClassName(klass){ this.klass = klass; };
+  ClassName.prototype.valueOf = ClassName.prototype.toString = function (){
+    return (this.klass.parent && this.klass.parent !== window) ? [this.klass.parent.className, this.klass.getName()].join('.') : this.klass.getName();
+  };
   
   Object.isClass = function isClass(object){
     return (Object.isFunction(object) && object.className instanceof ClassName);
@@ -29,26 +21,34 @@ Function.prototype.getName = function(){
   // function stringToObject
 
   function Class(){
-    // preventing inappropriate usage
-    if (this != window && !(this instanceof Class) && !Object.isClass(this))
-         throw new Error('Class can only be applied to classes or window');
-    
+    console.log(arguments);
     var args = $A(arguments), 
-        parent = (this instanceof Class) ? null : this,
-        className = (Object.isString(args.first())) ? args.shift() :
-                    (Object.isFunction(args.first())) ? args.first().getName() : null;
-        
+        parent = (this instanceof arguments.callee) ? null : this,
+        className = Object.isString(args[0]) ? 
+                      Object.isFunction(args[1]) ?
+                        args.shift()+'.'+args[0].getName()
+                      : args.shift() 
+                    : Object.isFunction(args[0]) ? 
+                      args[0].getName()
+                    : '';
+    
+    className = className.replace('$$','.');
     if (className.include('.')){
-      var classNames = className.split('.');
-      className = classNames.pop();
-      parent = eval(classNames.join('.'));
+      var objectNames = className.split('.');
+      className = objectNames.pop();
+      if (objectNames.first() != 'this') objectNames.unshift('this');
+      var parentName = objectNames.join('.');
+      parent = eval(parentName);
+      if (!parent) throw new TypeError(objectNames+' is undefined');
     }
     
-    console.log('parent', parent);
-        
-    if (!className || className === '' || className[0] != className[0].toUpperCase())
+    if (className === '' || className[0] != className[0].toUpperCase())
       throw new Error('invalid class name "'+className+'"');
-    
+      
+    if (parent && parent != window && !parent.name){
+      console.log(parent);
+      throw new TypeError('invalid parent');
+    }
     klass = createClass(className,parent);
     
     return klass;
@@ -66,6 +66,7 @@ Function.prototype.getName = function(){
     klass.shortName = className; //there must be a way to get this in ruby
     klass.className = new ClassName(klass);
     if (parent) parent[className] = klass;
+    console.log(parent);
     console.info('Creating class ', klass.className);
     return klass;
   };
