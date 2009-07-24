@@ -21,19 +21,19 @@ Klass = function Klass(){
     superklass.subklasses.push(klass);
   } 
 
-  // consider making instance a function  new Frog.instance =AKA= Frog.create()
+  // consider making instance a function  new Frog.prototype =AKA= Frog.create()
   // then here we just do something like 
-  //   klass.instance = function instance(); 
-  //   klass.instance.prototype = Object.cloneWithInheritance(klass.instance);
-  klass.instance = Object.cloneWithInheritance(klass.instance);
-  klass.instance.klass = klass;
+  //   klass.prototype = function instance(); 
+  //   klass.prototype.prototype = Object.cloneWithInheritance(klass.prototype);
+  klass.prototype = Object.cloneWithInheritance(klass.prototype);
+  klass.prototype.klass = klass;
   for (var i=0; i < args.length; i++) {
     var methods = args[i];
     if (Object.isFunction(methods)){
       klass.klassName = methods.name ? methods.name.capitalize() : 'anonymous'; //TODO replace capitalize
       methods = methods.bind(klass)();
     }
-    Object.extend(klass.instance,methods);
+    Object.extend(klass.prototype,methods);
   };
   return klass;
 };
@@ -49,12 +49,11 @@ Klass.prototype = {
     function instance(args){
       this.initialize.apply(this,args);
     }
-    instance.prototype = this.instance;
-    // instance.constructor = instance;
+    instance.prototype = this.prototype;
     return new instance(arguments);
   },
   
-  instance: {
+  prototype: {
     initialize: function initialize(){
       console.log('initializing',this,arguments);
     },
@@ -63,9 +62,9 @@ Klass.prototype = {
     },
     
     isA: function(klass){
-      if (!klass || !klass.instance) return false;
+      if (!klass || !klass.prototype) return false;
       function constructor(){};
-      constructor.prototype = klass.instance;
+      constructor.prototype = klass.prototype;
       return (this instanceof constructor);
     }
   },
@@ -75,7 +74,7 @@ Klass.prototype = {
   },
   
   include: function(methods){
-    Object.extend(this.instance, methods);
+    Object.extend(this.prototype, methods);
     return this;
   },
 
@@ -87,7 +86,7 @@ Klass.prototype = {
   },
   
   defineInstanceMethod: function(method){
-    this.instance[method.name] = method;
+    this.prototype[method.name] = method;
     return this;
   }
 
@@ -103,7 +102,7 @@ Klass.prototype = {
     total++;
     if (!!eval(evaluation)){
       passed++;
-      console.info(evaluation)
+      console.info(evaluation);
     }else{
       failed++;
       console.warn(evaluation);
@@ -136,8 +135,8 @@ test('sam.isA(Toad)');
 test('!bob.isA(Toad)');
 
 
-Frog.instance.leap = function leap(){};
-Toad.instance.hop = function hop(){};
+Frog.prototype.leap = function leap(){};
+Toad.prototype.hop = function hop(){};
 
 test('"leap" in bob');
 test('"hop" in sam');
