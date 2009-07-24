@@ -1,50 +1,50 @@
 Object.cloneWithInheritance = function cloneWithInheritance(source){
-  var sourceClass = function(){};
-  sourceClass.prototype = source;
-  return new sourceClass();
+  var sourceKlass = function(){};
+  sourceKlass.prototype = source;
+  return new sourceKlass();
 };
 
 
-Class = function Class(){
-  var args = $A(arguments), class = this, superclass;
+Klass = function Klass(){
+  var args = $A(arguments), klass = this, superklass;
 
-  if (arguments[0] instanceof Class) superclass = args.shift();
+  if (arguments[0] instanceof Klass) superklass = args.shift();
   
-  // class.class = Class;
+  // klass.klass = Klass;
   
-  if (superclass){
+  if (superklass){
     function constructor(){};
-    constructor.prototype = superclass;
-    class = new constructor;
-    class.superclass = superclass;
-    class.subclasses = [];
-    superclass.subclasses.push(class);
+    constructor.prototype = superklass;
+    klass = new constructor;
+    klass.superklass = superklass;
+    klass.subklasses = [];
+    superklass.subklasses.push(klass);
   } 
 
   // consider making instance a function  new Frog.instance =AKA= Frog.create()
   // then here we just do something like 
-  //   class.instance = function instance(); 
-  //   class.instance.prototype = Object.cloneWithInheritance(class.instance);
-  class.instance = Object.cloneWithInheritance(class.instance);
-  class.instance.class = class;
+  //   klass.instance = function instance(); 
+  //   klass.instance.prototype = Object.cloneWithInheritance(klass.instance);
+  klass.instance = Object.cloneWithInheritance(klass.instance);
+  klass.instance.klass = klass;
   for (var i=0; i < args.length; i++) {
     var methods = args[i];
     if (Object.isFunction(methods)){
-      class.className = methods.name ? methods.name.capitalize() : 'anonymous'; //TODO replace capitalize
-      methods = methods.bind(class)();
+      klass.klassName = methods.name ? methods.name.capitalize() : 'anonymous'; //TODO replace capitalize
+      methods = methods.bind(klass)();
     }
-    Object.extend(class.instance,methods);
+    Object.extend(klass.instance,methods);
   };
-  return class;
+  return klass;
 };
 
 
 
-Class.prototype = {
-  class: Class,
-  className: 'Class',
-  superclass: null,
-  subclasses: [],
+Klass.prototype = {
+  klass: Klass,
+  klassName: 'Klass',
+  superklass: null,
+  subklasses: [],
   create: function create(){
     function instance(args){
       this.initialize.apply(this,args);
@@ -59,15 +59,15 @@ Class.prototype = {
       console.log('initializing',this,arguments);
     },
     inspect: function(){
-      return '<#'+this.class.className+' >';
+      return '<#'+this.klass.klassName+' >';
     },
     
-    isA: function(class){
-      if (!class || !class.instance) return false;
+    isA: function(klass){
+      if (!klass || !klass.instance) return false;
       function constructor(){};
-      constructor.prototype = class.instance;
+      constructor.prototype = klass.instance;
       return (this instanceof constructor);
-    },
+    }
   },
   
   extend: function(methods){
@@ -80,7 +80,7 @@ Class.prototype = {
   },
 
   inspect: function(){
-    return '<#Class:'+this.className+'>';
+    return '<#Klass:'+this.klassName+'>';
   },
   toString: function toString(){
     return this.inspect();
@@ -89,7 +89,7 @@ Class.prototype = {
   defineInstanceMethod: function(method){
     this.instance[method.name] = method;
     return this;
-  },
+  }
 
 };
 
@@ -97,26 +97,40 @@ Class.prototype = {
 
 
 // tests
+(function() {
+  var total = 0, passed = 0, failed = 0;
+  function test(evaluation){
+    total++;
+    if (!!eval(evaluation)){
+      passed++;
+      console.info(evaluation)
+    }else{
+      failed++;
+      console.warn(evaluation);
+    }
+  }
+  
+  function testResults(){
+    console.log('TEST RESULTES: total:'+total+' passed:'+passed+' failed:'+failed);
+  };
+  
+  window.test = test;
+  window.testResults = testResults;
+})();
 
-function test(evaluation){
-  !!eval(evaluation) ? 
-    console.info(evaluation)
-  : console.warn(evaluation);
-}
 
-
-Frog = new Class(function Frog(){ with(this){
-  this.someClassMethod = function someClassMethod(){};
+Frog = new Klass(function Frog(){ with(this){
+  this.someKlassMethod = function someKlassMethod(){};
   defineInstanceMethod(function freakout(){});
   return {
     jumps:true
-  }
+  };
 }});
 
 bob = Frog.create();
 test('bob.isA(Frog)');
 
-Toad = new Class(function Toad(){});
+Toad = new Klass(function Toad(){});
 sam = Toad.create();
 test('sam.isA(Toad)');
 test('!bob.isA(Toad)');
@@ -131,17 +145,17 @@ test('!("leap" in sam)');
 test('!("hop" in bob)');
 
 
-HugeFrog = new Class(Frog, function HugeFrog(){
+HugeFrog = new Klass(Frog, function HugeFrog(){
   this.include({
-    pounce: function pounce(){},
+    pounce: function pounce(){}
   });
   
   this.extend({
-    find: function find(){},
-  })
+    find: function find(){}
+  });
 });
 
-test('HugeFrog.superclass === Frog');
+test('HugeFrog.superklass === Frog');
 test('"find" in HugeFrog');
 
 alph = HugeFrog.create();
@@ -153,10 +167,10 @@ test('"pounce" in alph');
 // mixin
 Dies = {
   die: function die(){},
-  reserect: function reserect(){},
-}
+  reserect: function reserect(){}
+};
 
-Dog = new Class(function Dog(){
+Dog = new Klass(function Dog(){
   
   this.include(Dies);
   
@@ -164,13 +178,13 @@ Dog = new Class(function Dog(){
     initialize: function(name){
       console.log('init new Dog',arguments);
       this.name = name;
-    },
-  }
+    }
+  };
   
-})
+});
 
 test('"die" in Dog.create()');
-test('Dog.create("walter").name == "walter"')
+test('Dog.create("walter").name == "walter"');
 
 
-
+testResults();
