@@ -137,70 +137,94 @@ var Klass;
 
 
 
-  Klass.prototype = {
-    klass: Klass,
-    klassName:  null,
-    superklass: null,
-    subklasses: null,
-    create: function create(){
+  Klass.prototype = (function() {
+    function create(){
       return applyNew(this.instance,arguments);
-    },
-    inspect: function(){
+    }
+
+    function inspect(){
       return '<#Klass:'+this.klassName+'>';
-    },
-    toString: function toString(){
+    }
+
+    function toString(){
       return this.inspect();
-    },
-    // defines a meth
-    defineMethod: function defineMethod(method){
+    }
+
+    function defineInstanceMethod(method){
       var methods = {};
       methods[method.name] = method;
       this.include(methods);
       return this;
-    },
-    defineClassMethod: function defineMethod(method){
+    }
+
+    function defineClassMethod(method){
       var methods = {};
       methods[method.name] = method;
       this.extend(methods);
       return this;
-    },
-    include: curry(includeOrExtend, false),
-    extend: curry(includeOrExtend, true)
-  };
-
-  function includeOrExtend(extend, source){
-    if (typeof source == 'undefined') return this;
-    var properties = keys(source);
-
-    for (var i = 0, length = properties.length; i < length; i++) {
-      var property = properties[i], value = source[property];
-      if (typeof value === 'function' && argumentNames(value)[0] == "$super") {
-        var method = value;
-
-        var getSuper = function superGetter() { // run from either the klass or the instance
-          var superklass, supermethod;
-
-          superklass = (this instanceof Klass) ? this.superklass : this.klass.superklass;
-          if (superklass) supermethod = (this instanceof Klass) ? superklass[property] :
-            superklass.instance.prototype[property];
-
-          if (typeof supermethod !== 'function') throw new Error("super: no superclass method '"+property+"'");
-
-          return supermethod.apply(this, arguments);
-        };
-
-        value = wrap(getSuper, method);
-        value.valueOf = bind(method.valueOf, method);
-        value.toString = bind(method.toString, method);
-      }
-      if (extend)
-        this[property] = value;
-      else
-        this.instance.prototype[property] = value;
-
     }
-    return this;
-  }
+
+    function _include(source, extend){
+      if (typeof source == 'undefined') return this;
+      var properties = keys(source);
+
+      for (var i = 0, length = properties.length; i < length; i++) {
+        var property = properties[i], value = source[property];
+        if (typeof value === 'function' && argumentNames(value)[0] == "$super") {
+          var method = value;
+
+          var getSuper = function superGetter() {
+            var superklass, supermethod;
+
+            superklass = (this instanceof Klass) ? this.superklass : this.klass.superklass;
+            if (superklass) supermethod = (this instanceof Klass) ? superklass[property] :
+              superklass.instance.prototype[property];
+
+            if (typeof supermethod !== 'function') throw new Error("super: no superclass method '"+property+"'");
+
+            return supermethod.apply(this, arguments);
+          };
+
+          value = wrap(getSuper, method);
+          value.valueOf = bind(method.valueOf, method);
+          value.toString = bind(method.toString, method);
+        }
+        if (extend)
+          this[property] = value;
+        else
+          this.instance.prototype[property] = value;
+
+      }
+      return this;
+    }
+
+    function include(source){
+      return bind(_include,this)(source, false);
+    }
+
+    function extend(source){
+      return bind(_include,this)(source, true);
+    }
+
+    return {
+      klass:                Klass,
+      klassName:            null,
+      superklass:           null,
+      subklasses:           null,
+      create:               create,
+      inspect:              inspect,
+      defineMethod:         defineInstanceMethod,
+      defineInstanceMethod: defineInstanceMethod,
+      defineClassMethod:    defineClassMethod,
+      include:              include,
+      extend:               extend,
+    };
+
+  })();
+
+
+
+
 
   Klass.prototype.instance = function KlassInstance(){};
 
@@ -434,7 +458,30 @@ var Klass;
 
 
 
+  var Swinger = new Klass(function Swinger(){
+    this
+      .defineClassMethod(function swing(){ return 'thinks swinging is classy!'; })
+      .defineInstanceMethod(function swing(){ return 'is swinging in the instance!'; })
+  });
 
+  console.log(Swinger.swing(), Swinger.create().swing());
+
+  test('Swinger.swing() == "thinks swinging is classy!"');
+  test('Swinger.create().swing() == "is swinging in the instance!"');
+
+
+  var Ron = new Klass(Swinger, function Ron(){
+    this.defineMethod(function swing($super){ return 'Ron '+$super(); })
+    // here we're taking a method that has already been wrapped to get super as
+    // and instance method and using it as a class method and testing that is
+    // accesses the correct super method
+    this.swing = this.instance.prototype.swing;
+  });
+
+  console.log(Ron.swing(), Ron.create().swing());
+
+  test('Ron.swing() == "Ron thinks swinging is classy!"');
+  test('Ron.create().swing() == "Ron is swinging in the instance!"');
 
 
 
