@@ -1,15 +1,15 @@
-var Klass;  
+var Klass;
 (function() {
-  
+
   function countWindowSize() {
     var windowProperties = [];
     for (var p in window) windowProperties.push(p);
     return windowProperties.length;
   }
   var originalWindowSize = countWindowSize();
-  
-  
-  
+
+
+
   function toArray(iterable) {
     if (!iterable) return [];
     if ('toArray' in Object(iterable)) return iterable.toArray();
@@ -17,37 +17,37 @@ var Klass;
     while (length--) results[length] = iterable[length];
     return results;
   }
-  
+
   function extend(destination, source) {
     for (var property in source)
       destination[property] = source[property];
     return destination;
   }
-  
+
   function argumentNames(method) {
     var names = method.toString().match(/^[\s\(]*function[^(]*\(([^)]*)\)/)[1]
       .replace(/\/\/.*?[\r\n]|\/\*(?:.|[\r\n])*?\*\//g, '')
       .replace(/\s+/g, '').split(',');
     return names.length == 1 && !names[0] ? [] : names;
   }
-  
+
   function wrap(__method, wrapper) {
     return function() {
       return wrapper.apply(this, [bind(__method,this)].concat(toArray(arguments)));
     };
   }
-  
+
   function keys(object) {
     var results = [];
     for (var property in object)
       results.push(property);
     return results;
   }
-  
+
   function capitalize(string){
     return string.charAt(0).toUpperCase() + string.substring(1);
   }
-  
+
   function bind(__method, context) {
     if (arguments.length < 3 && typeof arguments[1] === 'undefined') return this;
     var args = Array.prototype.slice.call(arguments, 2);
@@ -65,7 +65,7 @@ var Klass;
 
 
   function applyNew(constructor, a){
-    if (typeof a === 'undefined' || !('length' in a)) 
+    if (typeof a === 'undefined' || !('length' in a))
       throw new TypeError("first argument to applyNew must be an array");
     var args = '';
     for (var i=0; i < a.length; i++) args += ', a['+i+']';
@@ -77,7 +77,7 @@ var Klass;
     var args = toArray(arguments), klass = this, superklass;
 
     if (arguments[0] instanceof Klass) superklass = args.shift();
-  
+
     if (superklass){
       function constructor(){};
       constructor.prototype = superklass;
@@ -87,14 +87,14 @@ var Klass;
     }
 
     klass.subklasses = [];
-  
+
     function KlassInstance(){
       if ('initialize' in this) return this.initialize.apply(this,arguments);
     };
     KlassInstance.prototype = cloneWithInheritance(klass.instance.prototype);
     KlassInstance.prototype.klass = klass;
     klass.instance = KlassInstance;
-  
+
     for (var i=0; i < args.length; i++) {
       var methods = args[i];
       if (typeof methods === "function"){
@@ -115,7 +115,7 @@ var Klass;
     klassName:  null,
     superklass: null,
     subklasses: null,
-    create: function create(){    
+    create: function create(){
       return applyNew(this.instance,arguments);
     },
     include: function(methods){
@@ -144,25 +144,25 @@ var Klass;
     },
     defineMethods: function defineMethods(source) {
       var properties = keys(source);
-      
+
       if (!keys({ toString: true }).length) {
         if (source.toString != Object.prototype.toString)
           properties.push("toString");
         if (source.valueOf != Object.prototype.valueOf)
           properties.push("valueOf");
       }
-      
+
       for (var i = 0, length = properties.length; i < length; i++) {
         var property = properties[i], value = source[property];
         if (typeof value === 'function' && argumentNames(value)[0] == "$super") {
           var method = value;
-          value = wrap((function(m) {
-            return function SUPER() { 
-              console.log('SUPER',m, method, '->', this.klass.superklass.instance.prototype[m], this);
-              return this.klass.superklass.instance.prototype[m].apply(this, arguments); 
-            };
-          })(property), method);
-      
+          var super = function super() {
+            var superMethod = this.klass.superklass.instance.prototype[property];
+            if (!this.klass.superklass || typeof superMethod !== 'function')
+              throw new Error("super: no superclass method ‘"+property+"’");
+            return superMethod.apply(this, arguments);
+          };
+          value = wrap(super, method);
           value.valueOf = bind(method.valueOf, method);
           value.toString = bind(method.toString, method);
         }
@@ -207,7 +207,7 @@ var Klass;
   }
 
   function testResults(){
-    
+
     console[total == passed ? 'log':'error']('TEST RESULTES: total:'+total+' passed:'+passed+' failed:'+failed);
   };
 
@@ -251,7 +251,7 @@ var Klass;
     this.include({
       pounce: function pounce(){}
     });
-  
+
     this.extend({
       find: function find(){}
     });
@@ -280,7 +280,7 @@ var Klass;
       initialize: function(name){
         this.name = name;
       }
-    };  
+    };
   });
 
   test('"die" in Dog.create()');
@@ -309,7 +309,6 @@ var Klass;
   test('!(willber.isA(Sheep))');
 
 
-
   var Mamal = new Klass(function Mamal(){ return {
     initialize: function mamalInitialize(){
       console.log('init mamal');
@@ -319,36 +318,44 @@ var Klass;
       return 'birthing mamal';
     }
   }});
-  
+
   var m = Mamal.create();
   test('m.birth() == "birthing mamal"');
   test('m.alive === true');
-  
+
   var Human = new Klass(Mamal, function Human(){ return {
     birth: function humanBirth($super){
       return $super()+' human';
-      this.alive = true;
-      return 'birthing mamal';
     }
   }});
-  
+
   var jared = Human.create();
+  jared.jared=true;
   test('jared.birth() == "birthing mamal human"');
   test('jared.alive === true');
-  
-  
 
 
+  jared.alive = false;
+
+  Mamal.instance.prototype.birth = function newMamalBirth(){
+    return 'sesarian bloody birthing mamal';
+  }
+
+  test('jared.birth() == "sesarian bloody birthing mamal human"');
+  test('jared.alive === false');
 
 
+  jared.klass.defineMethods({
+    breakMe: function breakMe($super){
+      try{
+        $super();
+      }catch(e){
+        if (e.message !== 'super: no superclass method ‘breakMe’') throw e;
+      }
+    }
+  });
 
-
-
-
-
-
-
-
+  jared.breakMe();
 
 
 
