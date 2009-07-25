@@ -37,12 +37,39 @@ var Klass;
     };
   }
 
-  function keys(object) {
-    var results = [];
-    for (var property in object)
-      results.push(property);
-    return results;
+  function curry(__method) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    if (!args.length) return __method;
+    return function() {
+      return __method.apply(this, args.concat(toArray(arguments)));
+    };
   }
+
+  var keys = (function() {
+
+    function _keys(object) {
+      var results = [];
+      for (var property in object)
+        results.push(property);
+      return results;
+    }
+
+    function keys(object) {
+      var results = _keys(object);
+
+      if (!_keys({ toString: true }).length) {
+        if (source.toString != Object.prototype.toString)
+          results.push("toString");
+        if (source.valueOf != Object.prototype.valueOf)
+          results.push("valueOf");
+      }
+
+      return results;
+    }
+
+    return keys;
+
+  })();
 
   function capitalize(string){
     return string.charAt(0).toUpperCase() + string.substring(1);
@@ -101,7 +128,7 @@ var Klass;
         klass.klassName = methods.name ? capitalize(methods.name) : 'anonymous'; //TODO replace capitalize
         methods = bind(methods,klass)();
       }
-      klass.defineMethods(methods);
+      klass.include(methods);
       // extend(klass.instance.prototype,methods);
     };
     console.log('NEW KLASS: ',klass);
@@ -118,13 +145,6 @@ var Klass;
     create: function create(){
       return applyNew(this.instance,arguments);
     },
-    include: function(methods){
-      extend(this.instance.prototype, methods);
-      return this;
-    },
-    extend: function(methods){
-      return extend(this, methods);
-    },
     inspect: function(){
       return '<#Klass:'+this.klassName+'>';
     },
@@ -132,45 +152,55 @@ var Klass;
       return this.inspect();
     },
     // defines a meth
-    defineInstanceMethod: function defineInstanceMethod(method){
-      // BEFORE
-      this.instance.prototype[method.name] = method;
-
-      // AFTER
-      // var methods = {};
-      // methods[method.name] = method;
-      // this.defineMethods(methods);
+    defineMethod: function defineMethod(method){
+      var methods = {};
+      methods[method.name] = method;
+      this.include(methods);
       return this;
     },
-    defineMethods: function defineMethods(source) {
-      var properties = keys(source);
-
-      if (!keys({ toString: true }).length) {
-        if (source.toString != Object.prototype.toString)
-          properties.push("toString");
-        if (source.valueOf != Object.prototype.valueOf)
-          properties.push("valueOf");
-      }
-
-      for (var i = 0, length = properties.length; i < length; i++) {
-        var property = properties[i], value = source[property];
-        if (typeof value === 'function' && argumentNames(value)[0] == "$super") {
-          var method = value;
-          var super = function super() {
-            var superMethod = this.klass.superklass.instance.prototype[property];
-            if (!this.klass.superklass || typeof superMethod !== 'function')
-              throw new Error("super: no superclass method ‘"+property+"’");
-            return superMethod.apply(this, arguments);
-          };
-          value = wrap(super, method);
-          value.valueOf = bind(method.valueOf, method);
-          value.toString = bind(method.toString, method);
-        }
-        this.instance.prototype[property] = value;
-      }
+    defineClassMethod: function defineMethod(method){
+      var methods = {};
+      methods[method.name] = method;
+      this.extend(methods);
       return this;
-    }
+    },
+    include: curry(includeOrExtend, false),
+    extend: curry(includeOrExtend, true)
   };
+
+  function includeOrExtend(extend, source){
+    if (typeof source == 'undefined') return this;
+    var properties = keys(source);
+
+    for (var i = 0, length = properties.length; i < length; i++) {
+      var property = properties[i], value = source[property];
+      if (typeof value === 'function' && argumentNames(value)[0] == "$super") {
+        var method = value;
+
+        var getSuper = function superGetter() { // run from either the klass or the instance
+          var superklass, supermethod;
+
+          superklass = (this instanceof Klass) ? this.superklass : this.klass.superklass;
+          if (superklass) supermethod = (this instanceof Klass) ? superklass[property] :
+            superklass.instance.prototype[property];
+
+          if (typeof supermethod !== 'function') throw new Error("super: no superclass method '"+property+"'");
+
+          return supermethod.apply(this, arguments);
+        };
+
+        value = wrap(getSuper, method);
+        value.valueOf = bind(method.valueOf, method);
+        value.toString = bind(method.toString, method);
+      }
+      if (extend)
+        this[property] = value;
+      else
+        this.instance.prototype[property] = value;
+
+    }
+    return this;
+  }
 
   Klass.prototype.instance = function KlassInstance(){};
 
@@ -207,14 +237,15 @@ var Klass;
   }
 
   function testResults(){
-
     console[total == passed ? 'log':'error']('TEST RESULTES: total:'+total+' passed:'+passed+' failed:'+failed);
   };
 
 
   var Frog = new Klass(function Frog(){ with(this){
     this.someKlassMethod = function someKlassMethod(){};
-    defineInstanceMethod(function freakout(){});
+    defineMethod(function freakout(){
+      return 'freaking the f out';
+    });
     return {
       jumps:true
     };
@@ -228,6 +259,8 @@ var Klass;
   test('bob.isA(Frog)');
   test('bob.klass === Frog');
   test('Frog.subklasses.length === 0');
+  test('typeof bob.freakout === "function"');
+  test('bob.freakout() == "freaking the f out"');
 
   var Toad = new Klass(function Toad(){});
   var sam = Toad.create();
@@ -249,12 +282,13 @@ var Klass;
 
   var HugeFrog = new Klass(Frog, function HugeFrog(){
     this.include({
-      pounce: function pounce(){}
+      pounce: function pounce(){},
+      freakout: function freakout($super){
+        return 'i will not start '+$super();
+      }
     });
 
-    this.extend({
-      find: function find(){}
-    });
+    this.defineClassMethod(function find(){});
   });
 
   test('HugeFrog.superklass === Frog');
@@ -266,6 +300,7 @@ var Klass;
   test('alph.isA(HugeFrog)');
   test('alph.isA(Frog)');
   test('"pounce" in alph');
+  test('alph.freakout() == "i will not start freaking the f out"');
 
 
   // mixin
@@ -317,17 +352,20 @@ var Klass;
       this.alive = true;
       return 'birthing mamal';
     }
-  }});
+  };});
 
   var m = Mamal.create();
   test('m.birth() == "birthing mamal"');
   test('m.alive === true');
 
-  var Human = new Klass(Mamal, function Human(){ return {
-    birth: function humanBirth($super){
-      return $super()+' human';
-    }
-  }});
+
+  var Human = new Klass(Mamal, function Human(){
+    return {
+      birth: function humanBirth($super){
+        return $super()+' human';
+      }
+    };
+  });
 
   var jared = Human.create();
   jared.jared=true;
@@ -339,23 +377,63 @@ var Klass;
 
   Mamal.instance.prototype.birth = function newMamalBirth(){
     return 'sesarian bloody birthing mamal';
-  }
+  };
 
   test('jared.birth() == "sesarian bloody birthing mamal human"');
   test('jared.alive === false');
 
 
-  jared.klass.defineMethods({
+  jared.klass.include({
     breakMe: function breakMe($super){
       try{
         $super();
       }catch(e){
-        if (e.message !== 'super: no superclass method ‘breakMe’') throw e;
+        if (e.message !== 'super: no superclass method \'breakMe\'') throw e;
       }
     }
   });
 
   jared.breakMe();
+
+
+
+
+
+
+
+
+  var Time = new Klass(function Time(){ with(this){
+    extend({
+      now: function now(){
+        return this.create(new Date());
+      }
+    });
+    include({
+      initialize: function initialize(date){
+        this.date = date || new Date(0);
+      }
+    });
+  };});
+
+  test('Time.now().date.getDate() == new Date().getDate()');
+  test('Time.create().date.getDate() == new Date(0).getDate()');
+
+  var Yesturday = new Klass(Time, function Yesturday(){ with(this){
+    extend({
+      now: function yesturdayNow($super){
+        var time = $super();
+        time.date.setDate(time.date.getDate() - 1);
+        return time;
+      }
+    });
+  };});
+
+  var oneDayAgo = new Date();
+  oneDayAgo.setDate(new Date().getDate() - 1);
+  test('Yesturday.now().date.getDate() == oneDayAgo.getDate()');
+
+
+
 
 
 
