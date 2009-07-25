@@ -18,31 +18,11 @@ var Klass;
     return results;
   }
 
-  function extend(destination, source) {
-    for (var property in source)
-      destination[property] = source[property];
-    return destination;
-  }
-
   function argumentNames(method) {
     var names = method.toString().match(/^[\s\(]*function[^(]*\(([^)]*)\)/)[1]
       .replace(/\/\/.*?[\r\n]|\/\*(?:.|[\r\n])*?\*\//g, '')
       .replace(/\s+/g, '').split(',');
     return names.length == 1 && !names[0] ? [] : names;
-  }
-
-  function wrap(__method, wrapper) {
-    return function() {
-      return wrapper.apply(this, [bind(__method,this)].concat(toArray(arguments)));
-    };
-  }
-
-  function curry(__method) {
-    var args = Array.prototype.slice.call(arguments, 1);
-    if (!args.length) return __method;
-    return function() {
-      return __method.apply(this, args.concat(toArray(arguments)));
-    };
   }
 
   var keys = (function() {
@@ -125,7 +105,7 @@ var Klass;
     for (var i=0; i < args.length; i++) {
       var methods = args[i];
       if (typeof methods === "function"){
-        klass.klassName = methods.name ? capitalize(methods.name) : 'anonymous'; //TODO replace capitalize
+        klass.klassName = methods.name ? capitalize(methods.name) : 'anonymous';
         methods = bind(methods,klass)();
       }
       klass.include(methods);
@@ -173,7 +153,7 @@ var Klass;
         if (typeof value === 'function' && argumentNames(value)[0] == "$super") {
           var method = value;
 
-          var getSuper = function superGetter() {
+          var $super = function $super() {
             var superklass, supermethod;
 
             superklass = (this instanceof Klass) ? this.superklass : this.klass.superklass;
@@ -184,8 +164,11 @@ var Klass;
 
             return supermethod.apply(this, arguments);
           };
-
-          value = wrap(getSuper, method);
+          
+          value = function superEnabledMethod(){
+            return method.apply(this, [bind($super,this)].concat(toArray(arguments)));
+          }
+          
           value.valueOf = bind(method.valueOf, method);
           value.toString = bind(method.toString, method);
         }
