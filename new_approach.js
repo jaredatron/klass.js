@@ -9,13 +9,8 @@ var Klass;
   var originalWindowSize = countWindowSize();
   
   
-  function extend(destination, source) {
-    for (var property in source)
-      destination[property] = source[property];
-    return destination;
-  }
   
-  var toArray = (typeof $A !== 'undefined') ? $A : function toArray(iterable) {
+  function toArray(iterable) {
     if (!iterable) return [];
     if ('toArray' in Object(iterable)) return iterable.toArray();
     var length = iterable.length || 0, results = new Array(length);
@@ -23,8 +18,34 @@ var Klass;
     return results;
   }
   
+  function extend(destination, source) {
+    for (var property in source)
+      destination[property] = source[property];
+    return destination;
+  }
+  
+  function argumentNames(method) {
+    var names = method.toString().match(/^[\s\(]*function[^(]*\(([^)]*)\)/)[1]
+      .replace(/\/\/.*?[\r\n]|\/\*(?:.|[\r\n])*?\*\//g, '')
+      .replace(/\s+/g, '').split(',');
+    return names.length == 1 && !names[0] ? [] : names;
+  }
+  
+  function wrap(__method, wrapper) {
+    return function() {
+      return wrapper.apply(this, [bind(__method,this)].concat(toArray(arguments)));
+    };
+  }
+  
+  function keys(object) {
+    var results = [];
+    for (var property in object)
+      results.push(property);
+    return results;
+  }
+  
   function capitalize(string){
-    return string.charAt(0).toUpperCase() + string.substring(1)
+    return string.charAt(0).toUpperCase() + string.substring(1);
   }
   
   function bind(__method, context) {
@@ -32,7 +53,7 @@ var Klass;
     var args = Array.prototype.slice.call(arguments, 2);
     return function() {
       return __method.apply(context, toArray(arguments).concat(args));
-    }
+    };
   }
 
 
@@ -80,7 +101,8 @@ var Klass;
         klass.klassName = methods.name ? capitalize(methods.name) : 'anonymous'; //TODO replace capitalize
         methods = bind(methods,klass)();
       }
-      extend(klass.instance.prototype,methods);
+      klass.defineMethods(methods);
+      // extend(klass.instance.prototype,methods);
     };
     console.log('NEW KLASS: ',klass);
     return klass;
@@ -109,8 +131,43 @@ var Klass;
     toString: function toString(){
       return this.inspect();
     },
-    defineInstanceMethod: function(method){
+    // defines a meth
+    defineInstanceMethod: function defineInstanceMethod(method){
+      // BEFORE
       this.instance.prototype[method.name] = method;
+
+      // AFTER
+      // var methods = {};
+      // methods[method.name] = method;
+      // this.defineMethods(methods);
+      return this;
+    },
+    defineMethods: function defineMethods(source) {
+      var properties = keys(source);
+      
+      if (!keys({ toString: true }).length) {
+        if (source.toString != Object.prototype.toString)
+          properties.push("toString");
+        if (source.valueOf != Object.prototype.valueOf)
+          properties.push("valueOf");
+      }
+      
+      for (var i = 0, length = properties.length; i < length; i++) {
+        var property = properties[i], value = source[property];
+        if (typeof value === 'function' && argumentNames(value)[0] == "$super") {
+          var method = value;
+          value = wrap((function(m) {
+            return function SUPER() { 
+              console.log('SUPER',m, method, '->', this.klass.superklass.instance.prototype[m], this);
+              return this.klass.superklass.instance.prototype[m].apply(this, arguments); 
+            };
+          })(property), method);
+      
+          value.valueOf = bind(method.valueOf, method);
+          value.toString = bind(method.toString, method);
+        }
+        this.instance.prototype[property] = value;
+      }
       return this;
     }
   };
@@ -150,7 +207,8 @@ var Klass;
   }
 
   function testResults(){
-    console.log('TEST RESULTES: total:'+total+' passed:'+passed+' failed:'+failed);
+    
+    console[total == passed ? 'log':'error']('TEST RESULTES: total:'+total+' passed:'+passed+' failed:'+failed);
   };
 
 
@@ -231,18 +289,18 @@ var Klass;
 
 
   var Wolf = new Klass(function Wolf(){
-    return{
+    return {
       initialize: function(name){
         this.name = name;
       }
-    }
+    };
   });
   var Sheep = new Klass(function Sheep(){
-    return{
+    return {
       initialize: function(){
         return Wolf.create.apply(Wolf, arguments);
       }
-    }
+    };
   });
 
   var willber = Sheep.create("willber");
@@ -250,9 +308,54 @@ var Klass;
   test('willber.isA(Wolf)');
   test('!(willber.isA(Sheep))');
 
-  testResults();
+
+
+  var Mamal = new Klass(function Mamal(){ return {
+    initialize: function mamalInitialize(){
+      console.log('init mamal');
+    },
+    birth: function mamlBirth(){
+      this.alive = true;
+      return 'birthing mamal';
+    }
+  }});
+  
+  var m = Mamal.create();
+  test('m.birth() == "birthing mamal"');
+  test('m.alive === true');
+  
+  var Human = new Klass(Mamal, function Human(){ return {
+    birth: function humanBirth($super){
+      return $super()+' human';
+      this.alive = true;
+      return 'birthing mamal';
+    }
+  }});
+  
+  var jared = Human.create();
+  test('jared.birth() == "birthing mamal human"');
+  test('jared.alive === true');
+  
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   var windowSize = countWindowSize();
   test('originalWindowSize === windowSize');
+
+  testResults();
 
 })();
