@@ -4,7 +4,23 @@
 <head>
   <script type="text/javascript" charset="utf-8" src="firebug-lite.js"></script>
   <link rel="stylesheet" href="firebug-list.css" type="text/css" media="screen" title="no title" charset="utf-8">
-  <script type="text/javascript" charset="utf-8" src="new_approach.js"></script>
+  <script type="text/javascript" charset="utf-8">
+      var originalWindowPropertyLength = 0;
+      window.getProperties = function getProperties() {
+        var windowProperties = [];
+        for (var p in window) windowProperties.push(p);
+        return windowProperties;
+      }
+      originalWindowPropertyLength = window.getProperties().length;
+  </script>
+  <script type="text/javascript" charset="utf-8" src="klass.js"></script>
+  <script type="text/javascript" charset="utf-8" src="test.js"></script>
+  <script type="text/javascript" charset="utf-8">
+    (function() {
+      if (window.getProperties().length !== (originalWindowPropertyLength + 1))
+        throw new Error('include libraries polluted global by more then 1');
+    })();
+  </script>
 </head>
 <body/>
 </html>
