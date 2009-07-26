@@ -49,7 +49,7 @@ new Test.Unit.Runner({
     this.assertNotIn('drive',Truck);
     this.assertNotIn('drive',Truck.create());
     
-    Truck.include({drive: function drive(){ return 'driving' }});
+    Truck.include({drive: function drive(){ return 'driving'; }});
     this.assertNotIn('drive',Truck);
     this.assertIn('drive', Truck.create());
     
@@ -61,7 +61,7 @@ new Test.Unit.Runner({
     this.assertNotIn('sail',Boat);
     this.assertNotIn('sail',Boat.create());
     
-    Boat.extend({sail: function sail(){ return 'with my flippy floppies' }});
+    Boat.extend({sail: function sail(){ return 'with my flippy floppies'; }});
     this.assertIn('sail',Boat);
     this.assertNotIn('sail', Boat.create());
     
@@ -213,7 +213,7 @@ new Test.Unit.Runner({
         plusSix:   plusSuperWrapped,
         plusSeven: plusSuperUnWrapped,
         plusEight: plusSuperUnWrapped
-      }
+      };
     });
     
     var t = Ti89.create();
@@ -241,7 +241,7 @@ new Test.Unit.Runner({
     // }});
     // 
     
-  },
+  }
     
     // 
     // Mamal.defineMethod(function getWeight(){

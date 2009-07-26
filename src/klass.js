@@ -7,21 +7,6 @@ var Klass = (function() {
     while (length--) results[length] = iterable[length];
     return results;
   }
-  
-  // 
-  // function update(array, args) {
-  //   var arrayLength = array.length, length = args.length;
-  //   while (length--) array[arrayLength + length] = args[length];
-  //   return array;
-  // }
-  // 
-  // function merge(array, args) {
-  //   array = slice.call(array, 0);
-  //   return update(array, args);
-  // }
-  // 
-  // 
-  // 
 
   function argumentNames(method) {
     var names = method.toString().match(/^[\s\(]*function[^(]*\(([^)]*)\)/)[1]
@@ -29,7 +14,13 @@ var Klass = (function() {
       .replace(/\s+/g, '').split(',');
     return names.length == 1 && !names[0] ? [] : names;
   }
-
+  
+  function getFunctionName(method){
+    var name = method.name;
+    if (!name) method.name = name = method.toString().match(/^[\s\(]*function\s*([^(]*)\(/)[1];
+    return name;
+  };
+  
   var keys = (function() {
 
     function _keys(object) {
@@ -43,9 +34,9 @@ var Klass = (function() {
       var results = _keys(object);
 
       if (!_keys({ toString: true }).length) {
-        if (source.toString != Object.prototype.toString)
+        if (results.toString != Object.prototype.toString)
           results.push("toString");
-        if (source.valueOf != Object.prototype.valueOf)
+        if (results.valueOf != Object.prototype.valueOf)
           results.push("valueOf");
       }
 
@@ -119,7 +110,8 @@ var Klass = (function() {
         klass.defineMethod.apply(klass,methods);
       }else{
         if (typeof methods === "function"){
-          if (methods.name) klass.klassName = capitalize(methods.name);
+          var klassName;
+          if (klassName = getFunctionName(methods)) klass.klassName = capitalize(klassName);
           methods = bind(methods,klass)();
         }
         klass.include(methods);
@@ -146,9 +138,10 @@ var Klass = (function() {
 
     function _defineMethod(onto, how, method){
       if (!method) return onto;
-      if (!method.name || method.name == '') throw new Error('methods must be named');
+      var name = getFunctionName(method);
+      if (!name || name == '') throw new Error('methods must be named');
       var methods = {};
-      methods[method.name] = method;
+      methods[name] = method;
       onto[how](methods);
       return onto;
     }
