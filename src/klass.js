@@ -45,12 +45,14 @@ var Klass = (function() {
     return string.charAt(0).toUpperCase() + string.substring(1);
   }
 
-  function bind(__method, context) {
+  function bind(__method, context, hide) {
     if (arguments.length < 3 && typeof arguments[1] === 'undefined') return this;
     var args = Array.prototype.slice.call(arguments, 2);
-    return function() {
+    function bondWrapper() {
       return __method.apply(context, toArray(arguments).concat(args));
     };
+    if (!hide) bondWrapper.__boundTo = __method;
+    return bondWrapper;
   }
 
 
@@ -120,18 +122,21 @@ var Klass = (function() {
       return this.inspect();
     }
 
-    function defineInstanceMethod(method){
+    function _defineMethod(onto, how, method){
+      if (!method) return onto;
+      if (!method.name || method.name == '') throw new Error('methods must be named');
       var methods = {};
       methods[method.name] = method;
-      this.include(methods);
-      return this;
+      onto[how](methods);
+      return onto;
+    }
+
+    function defineInstanceMethod(method){
+      return _defineMethod(this,'include',method);
     }
 
     function defineClassMethod(method){
-      var methods = {};
-      methods[method.name] = method;
-      this.extend(methods);
-      return this;
+      return _defineMethod(this,'extend',method);
     }
     
     function _removeMethod(){
@@ -153,8 +158,23 @@ var Klass = (function() {
     function removeClassMethod(){};
     
     function alias(to, from){
-      this.instance.prototype[to] = this.instance.prototype[from]
+      this.instance.prototype[to] = this.instance.prototype[from];
       return this;
+    }
+    
+    
+
+    function _getSuper(klass_or_instance){
+      if (!klass_or_instance) throw new Error('you must pass `this` to getSuper');
+      var superklass, supermethod, methodName = this.__methodName;
+
+      superklass = (klass_or_instance instanceof Klass) ? klass_or_instance.superklass : klass_or_instance.klass.superklass;
+      if (superklass) supermethod = (klass_or_instance instanceof Klass) ? superklass[methodName] :
+        superklass.instance.prototype[methodName];
+
+      if (typeof supermethod !== 'function') throw new Error("super: no superclass method '"+methodName+"'");
+
+      return supermethod; //.apply(klass_or_instance, arguments);
     }
 
     function _include(source, extend){
@@ -163,27 +183,21 @@ var Klass = (function() {
 
       for (var i = 0, length = properties.length; i < length; i++) {
         var property = properties[i], value = source[property];
-        if (typeof value === 'function' && argumentNames(value)[0] == "$super") {
-          var method = value;
+        if (typeof value === 'function') {
 
-          var $super = function $super() {
-            var superklass, supermethod;
+          value.__methodName || (value.__methodName = property); // casting this methods name
+          value.getSuper || (value.getSuper = bind(_getSuper, value, true)); // binding getSuper to method
 
-            superklass = (this instanceof Klass) ? this.superklass : this.klass.superklass;
-            if (superklass) supermethod = (this instanceof Klass) ? superklass[property] :
-              superklass.instance.prototype[property];
-
-            if (typeof supermethod !== 'function') throw new Error("super: no superclass method '"+property+"'");
-
-            return supermethod.apply(this, arguments);
-          };
-
-          value = function superEnabledMethod(){
-            return method.apply(this, [bind($super,this)].concat(toArray(arguments)));
+          if (!value.__superWraper && argumentNames(value)[0] == "$super"){
+            var __method = value;
+            value = function superWrapper(){
+              return __method.apply(this, [__method.getSuper(this)].concat(toArray(arguments)));
+            };
+            value.__superWraperFor = __method;
+            value.valueOf = bind(__method.valueOf, __method);
+            value.toString = bind(__method.toString, __method);
+            value.getSuper = __method.getSuper;
           }
-
-          value.valueOf = bind(method.valueOf, method);
-          value.toString = bind(method.toString, method);
         }
         if (extend)
           this[property] = value;
@@ -215,7 +229,7 @@ var Klass = (function() {
       def_self:             defineClassMethod,
       defineClassMethod:    defineClassMethod,
       include:              include,
-      extend:               extend,
+      extend:               extend
     };
 
   })();
