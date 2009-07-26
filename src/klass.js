@@ -235,17 +235,14 @@ var Klass = (function() {
     /*
      *
      */
-    function _include(source, extend){
+    function _extend(source, include){
       if (typeof source === 'undefined') return this;
 
-      if (typeof source === 'function'){
+      if (typeof source === 'function')
         source = bind(source, this)();
-      }
 
-      if (source instanceof Array){
-        this.defineMethod.apply(this,source);
-        return this;
-      }
+      if (source instanceof Array)
+        return this.defineMethod.apply(this,source);
 
       var properties = keys(source);
       for (var i = 0, length = properties.length; i < length; i++) {
@@ -254,20 +251,20 @@ var Klass = (function() {
         if (typeof value === 'function' && !value.methodName)
           value = _bindToMethodName(value, property);
 
-        if (extend)
-          this[property] = value;
-        else
+        if (include)
           this.instance.prototype[property] = value;
+        else
+          this[property] = value;
       }
       return this;
     }
 
     function include(source){
-      return bind(_include,this)(source, false);
+      return bind(_extend,this)(source, true);
     }
 
     function extend(source){
-      return bind(_include,this)(source, true);
+      return bind(_extend,this)(source, false);
     }
 
     return {
