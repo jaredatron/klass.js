@@ -37,6 +37,22 @@ var FatDog = new Klass(Dog, function FatDog(){ return {
 
 }});
 
+
+var Human = new Klass(Mamal, 'human',[
+  function initialize(){
+    this.isSmiling = false;
+  },
+  function smile(){
+    this.isSmiling = true;
+    return this;
+  },
+  function frown(){
+    this.isSmiling = false;
+    return this;
+  }
+]);
+
+
 // mixin
 var Wild = {
 

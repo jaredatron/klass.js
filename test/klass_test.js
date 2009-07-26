@@ -26,6 +26,12 @@ new Test.Unit.Runner({
     this.assertEqual('PerdyMouth', myKlass.klassName);
   },
 
+  test_klass_name_is_set_from_string: function(){
+    var myKlass = new Klass(function(){}, 'hotFace');
+    this.assertEqual('HotFace', myKlass.klassName);
+  },
+
+
   test_klass_with_no_ancestor_has_null_superklass: function(){
     this.assertNull(SteralBastard.superklass);
   },
@@ -215,7 +221,7 @@ new Test.Unit.Runner({
     var plusSuperWrappedPropertiesLength   = Object.keys(plusSuperWrapped).length,
         plusSuperUnWrappedPropertiesLength = Object.keys(plusSuperUnWrapped).length;
 
-    window.Ti89 = new Klass(Calc, function Transient(){
+    var Ti89 = new Klass(Calc, function Transient(){
       return {
         plusFive:  plusSuperWrapped,
         plusSix:   plusSuperWrapped,
@@ -235,21 +241,98 @@ new Test.Unit.Runner({
   },
 
 
+  test_that_alias_can_alias_methods: function(){
+    var indie = Human.create();
+    this.assert(!indie.isSmiling,'indie should not be smiling');
+    indie.smile()
+    this.assert(indie.isSmiling,'indie should be smiling');
+    indie.frown()
+    this.assert(!indie.isSmiling,'indie should not be smiling');
+
+    Human.include(function(){ with(this){
+
+      alias('grin','smile');
+
+      def(function smile(){
+        return '=]';
+      });
+
+    }});
+
+    indie.smile()
+    this.assert(!indie.isSmiling,'indie should not be smiling');
+    this.assertEqual('=]', indie.smile());
+    indie.grin()
+    this.assert(indie.isSmiling,'indie should be smiling');
+
+  },
+
   test_that_alias_method_preseves_methos_pointed_to_at_time_of_alias: function(){
-    // var Indecisive = new Klass(function Indecisive(){ with(this){
-    //
-    //   this.isSmiling = false;
-    //
-    //   def(function smile(){
-    //     this.alias
-    //   })
-    //
-    //   return{
-    //     isSmiling: false;
-    //   }
-    //
-    // }});
-    //
+
+    window.cWalken = Human.create()
+
+    this.assertEqual(100, cWalken.getWeight());
+
+    Human.include(function(){ with(this){
+
+      alias('oldGetWeight','getWeight');
+
+      def(function getWeight(){
+        return 'I\'m not fat! '+arguments.callee.$super();
+      });
+
+      def(function rapeThePlanet(){
+        return 'nom nom nom, vroom vroom';
+      });
+
+    }});
+
+    console.log(cWalken.getWeight());
+
+    this.assert(cWalken.isA(Human));
+    this.assert(cWalken.isA(Mamal));
+    this.assertEqual(100, cWalken.oldGetWeight());
+    this.assertEqual('I\'m not fat! 100', cWalken.getWeight());
+    this.assertEqual('nom nom nom, vroom vroom', cWalken.rapeThePlanet());
+
+    (function() {
+      console.log(cWalken.getWeight());
+    }).delay(0.2);
+
+  },
+
+
+  test_something_else: function(){
+
+    Liquid = new Klass('liauid',[
+      function flow(){
+         return 'flowing';
+      }
+    ]);
+
+    var water = Liquid.create();
+    this.assertEqual('flowing', water.flow());
+
+    ViscusLiquid = new Klass(Liquid, function ViscusLiquid(){
+      this.def(function flow($super){
+        return $super()+' slowly';
+      });
+    })
+
+    var ketsup = ViscusLiquid.create();
+    this.assertEqual('flowing', water.flow());
+    this.assertEqual('flowing slowly', ketsup.flow());
+
+    ViscusLiquid.include(function ViscusLiquid(){
+      this.alias('_flow', 'flow');
+      this.def(function flow(){
+        return this._flow()+' into sludge';
+      });
+    });
+
+    this.assertEqual('flowing', water.flow());
+    this.assertEqual('flowing slowly into sludge', ketsup.flow());
+
 
   }
 

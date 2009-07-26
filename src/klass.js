@@ -109,7 +109,8 @@ var Klass = (function() {
 
     var length = args.length, methodName;
     while(klass.klassName === 'anonymous' && length--)
-      if (typeof args[length] === "function" && (methodName = getFunctionName(args[length])))
+      if (typeof args[length] === 'string' && (methodName = args[length]) ||
+          typeof args[length] === "function" && (methodName = getFunctionName(args[length])))
         klass.klassName = capitalize(methodName);
 
 
@@ -236,7 +237,7 @@ var Klass = (function() {
      *
      */
     function _extend(source, include){
-      if (typeof source === 'undefined') return this;
+      if (typeof source === 'undefined' || typeof source === 'string') return this;
 
       if (typeof source === 'function')
         source = bind(source, this)();
@@ -279,6 +280,7 @@ var Klass = (function() {
       defineInstanceMethod: defineInstanceMethod,
       def_self:             defineClassMethod,
       defineClassMethod:    defineClassMethod,
+      alias:                alias,
       include:              include,
       extend:               extend
     };
