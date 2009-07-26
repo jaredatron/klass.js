@@ -14,30 +14,30 @@ var Mamal = new Klass(function Mamal(){ return {
 }});
 
 var Dog = Klass(Mamal, function Dog(){ with(this){
-  
+
   def(function speak(){
     return 'ruff ruff';
   });
-  
+
 }});
 var Cat = Klass(Mamal, function Cat(){ with(this){
-  
+
   def(function speak(){
     return 'meow';
   });
-  
+
 }});
 
 
 var FatDog = new Klass(Dog, function FatDog(){ return {
-  
+
   getWeight: function getFatDogWeight($super){
     return $super() + 15;
   }
-  
+
 }});
 
 // mixin
 var Wild = {
-  
+
 }

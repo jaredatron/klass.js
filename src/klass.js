@@ -14,13 +14,13 @@ var Klass = (function() {
       .replace(/\s+/g, '').split(',');
     return names.length == 1 && !names[0] ? [] : names;
   }
-  
+
   function getFunctionName(method){
     var name = method.name;
     if (!name) method.name = name = method.toString().match(/^[\s\(]*function\s*([^(]*)\(/)[1];
     return name;
   };
-  
+
   var keys = (function() {
 
     function _keys(object) {
@@ -145,7 +145,7 @@ var Klass = (function() {
       onto[how](methods);
       return onto;
     }
-    
+
    /** defineInstanceMethod(method[, method])
      * - method (Function): the function to be used as the instance method
      *
@@ -165,33 +165,33 @@ var Klass = (function() {
         _defineMethod(this,'extend',arguments[i]);
       return this;
     }
-    
+
     function _removeMethod(){
       // we need a way to detect if an object paramiter is inherited or not
       // i know that delete wont affect it so maybe we store it, try and delete it
       // if it doesnt change we assume is inherited, otherwise we reset it
-      
+
       // this could break if someone tried to freeze a paramiter by seting it to its
       // self. that would leave the values identical but prevent a change in the superclass
       // from bubbling up that point
-      
-      // !! we have full controll of the method applying process, we could store... hm.... 
-      
+
+      // !! we have full controll of the method applying process, we could store... hm....
+
       // Object.freezeCurrentValues = function freezeCurrentValues(object){
       //   for (var p in object) object[p] = object[p];
       //   return object;
       // };
     }
-    
+
     function removeInstanceMethod(){};
     function removeClassMethod(){};
-    
+
     function alias(to, from){
       this.instance.prototype[to] = this.instance.prototype[from];
       return this;
     }
-    
-    
+
+
 
     function _findAndCallSuperMethod(methodName, args){
       var superklass, supermethod, isKlass = (this instanceof Klass);
@@ -205,8 +205,8 @@ var Klass = (function() {
 
       return supermethod.apply(this, args);
     }
-    
-    
+
+
     // before a method is pushed onto a class object or and instance prototype object it is wrapped by a
     // method that binds it to its property name (or method name) forever. Upon calling setups up a this
     // wrapper setupup the $super method
@@ -219,7 +219,7 @@ var Klass = (function() {
         var args = toArray(arguments);
         if (__requested_super) args.unshift(__super);
         __method.$super = __super; // enable arguments.callee.$super() syntax;
-        var r = __method.apply(this, args); 
+        var r = __method.apply(this, args);
         delete __method.$super;
         return r;
       };
@@ -239,10 +239,10 @@ var Klass = (function() {
 
       for (var i = 0, length = properties.length; i < length; i++) {
         var property = properties[i], value = source[property];
-        
+
         if (typeof value === 'function' && !value.methodName)
           value = _bindToMethodName(value, property);
-          
+
         if (extend)
           this[property] = value;
         else
@@ -290,8 +290,8 @@ var Klass = (function() {
       return (this instanceof klass.instance);
     }
   };
-  
-  
+
+
   return Klass;
 
 })();
