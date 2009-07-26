@@ -57,13 +57,16 @@ var Klass = (function() {
     function bindWrapper() {
       return __method.apply(context, toArray(arguments).concat(args));
     };
-    if (!hide){
-      bindWrapper.__context = this;
-      bindWrapper.__method = __method;
-    }
+    bindWrapper.__context = this;
+    bindWrapper.__method  = __method;
+    bindWrapper.valueOf   = bind._valueOf;
+    bindWrapper.toString  = bind._toString;
+    bindWrapper.name      = getFunctionName(__method);
     return bindWrapper;
   }
 
+  bind._valueOf = function valueOf(){ return this.__method.valueOf.apply(this.__method); }
+  bind._toString = function toString(){ return this.__method.toString.apply(this.__method); }
 
   function cloneWithInheritance(source){
     var sourceKlass = function(){};
@@ -102,6 +105,8 @@ var Klass = (function() {
     klass.instance = KlassInstance;
     klass.klassName = 'anonymous';
     klass.subklasses = [];
+
+
 
     // TODO move this ability to use blocks as definitions to the extend method
     for (var i=0; i < args.length; i++) {
@@ -225,11 +230,10 @@ var Klass = (function() {
       };
 
       __wrapper.methodName = __methodName;
-      __wrapper.__method = __method;
-
-      // disabled for debugging
-      __wrapper.valueOf = __method.valueOf.bind(__method);
-      __wrapper.toString = __method.toString.bind(__method);
+      __wrapper.__method   = __method;
+      __wrapper.valueOf    = bind._valueOf;
+      __wrapper.toString   = bind._toString;
+      __wrapper.name = getFunctionName(__method);
       return __wrapper;
     }
 

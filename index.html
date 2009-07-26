@@ -2,24 +2,56 @@
   "http://www.w3.org/TR/html4/strict.dtd">
 <html>
 <head>
-  <script type="text/javascript" charset="utf-8" src="firebug-lite.js"></script>
-  <link rel="stylesheet" href="firebug-list.css" type="text/css" media="screen" title="no title" charset="utf-8">
+  <script type="text/javascript" charset="utf-8" src="http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js"></script>
+  <script type="text/javascript" charset="utf-8" src="src/klass.js"></script>
   <script type="text/javascript" charset="utf-8">
-      var originalWindowPropertyLength = 0;
-      window.getProperties = function getProperties() {
-        var windowProperties = [];
-        for (var p in window) windowProperties.push(p);
-        return windowProperties;
+    // some small one off tests
+
+    var SteralBastard = new Klass(function SteralBastard(){});
+
+
+    var Mamal = new Klass(function Mamal(){ return {
+      initialize: function MamalInitialize(name){
+        this.name = name || 'no name';
+      },
+      speak: function MamalSpeak(){
+        return 'gergle gregle';
+      },
+      getWeight: function getMamalWeight(){
+        return 10;
       }
-      originalWindowPropertyLength = window.getProperties().length;
-  </script>
-  <script type="text/javascript" charset="utf-8" src="klass.js"></script>
-  <script type="text/javascript" charset="utf-8" src="test.js"></script>
-  <script type="text/javascript" charset="utf-8">
-    (function() {
-      if (window.getProperties().length !== (originalWindowPropertyLength + 1))
-        throw new Error('include libraries polluted global by more then 1');
-    })();
+    }});
+
+    var Dog = Klass(Mamal, function Dog(){ with(this){
+
+      def(function speak(){
+        return 'ruff ruff';
+      });
+
+    }});
+    var Cat = Klass(Mamal, function Cat(){ with(this){
+
+      def(function speak(){
+        return 'meow';
+      });
+
+    }});
+
+
+    var FatDog = new Klass(Dog, function FatDog(){ return {
+
+      getWeight: function getFatDogWeight(){
+        return arguments.callee.$super() + 15;
+      }
+
+    }});
+
+    // mixin
+    var Wild = {
+
+    }
+
+
   </script>
 </head>
 <body/>
