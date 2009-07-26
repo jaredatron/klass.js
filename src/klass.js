@@ -298,6 +298,13 @@ var Klass = (function() {
     isA: function(klass){
       if (!(klass instanceof Klass)) return false;
       return (this instanceof klass.instance);
+    },
+    toObject: function(){
+      var object = {};
+      for (var p in this)
+        if (typeof this[p] !== 'function' && !(this[p] instanceof Klass)) object[p] = this[p];
+
+      return object;
     }
   };
 
