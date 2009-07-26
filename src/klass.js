@@ -7,6 +7,21 @@ var Klass = (function() {
     while (length--) results[length] = iterable[length];
     return results;
   }
+  
+  // 
+  // function update(array, args) {
+  //   var arrayLength = array.length, length = args.length;
+  //   while (length--) array[arrayLength + length] = args[length];
+  //   return array;
+  // }
+  // 
+  // function merge(array, args) {
+  //   array = slice.call(array, 0);
+  //   return update(array, args);
+  // }
+  // 
+  // 
+  // 
 
   function argumentNames(method) {
     var names = method.toString().match(/^[\s\(]*function[^(]*\(([^)]*)\)/)[1]
@@ -48,11 +63,14 @@ var Klass = (function() {
   function bind(__method, context, hide) {
     if (arguments.length < 3 && typeof arguments[1] === 'undefined') return this;
     var args = Array.prototype.slice.call(arguments, 2);
-    function bondWrapper() {
+    function bindWrapper() {
       return __method.apply(context, toArray(arguments).concat(args));
     };
-    if (!hide) bondWrapper.__boundTo = __method;
-    return bondWrapper;
+    if (!hide){
+      bindWrapper.__context = this;
+      bindWrapper.__method = __method;
+    }
+    return bindWrapper;
   }
 
 
@@ -94,14 +112,18 @@ var Klass = (function() {
     klass.klassName = 'anonymous';
     klass.subklasses = [];
 
-    // move this ability to use blocks as definitions to the extend method
+    // TODO move this ability to use blocks as definitions to the extend method
     for (var i=0; i < args.length; i++) {
       var methods = args[i];
-      if (typeof methods === "function"){
-        if (methods.name) klass.klassName = capitalize(methods.name);
-        methods = bind(methods,klass)();
+      if (methods instanceof Array){
+        klass.defineMethod.apply(klass,methods);
+      }else{
+        if (typeof methods === "function"){
+          if (methods.name) klass.klassName = capitalize(methods.name);
+          methods = bind(methods,klass)();
+        }
+        klass.include(methods);
       }
-      klass.include(methods);
     };
 
     return klass;
@@ -130,13 +152,25 @@ var Klass = (function() {
       onto[how](methods);
       return onto;
     }
-
+    
+   /** defineInstanceMethod(method[, method])
+     * - method (Function): the function to be used as the instance method
+     *
+    **/
     function defineInstanceMethod(method){
-      return _defineMethod(this,'include',method);
+      for (var i = arguments.length - 1; i >= 0; i--)
+        _defineMethod(this,'include',arguments[i]);
+      return this;
     }
 
+    /** defineInstanceMethod(method[, method])
+      * - method (Function): the function to be used as the class method
+      *
+     **/
     function defineClassMethod(method){
-      return _defineMethod(this,'extend',method);
+      for (var i = arguments.length - 1; i >= 0; i--)
+        _defineMethod(this,'extend',arguments[i]);
+      return this;
     }
     
     function _removeMethod(){
@@ -147,6 +181,8 @@ var Klass = (function() {
       // this could break if someone tried to freeze a paramiter by seting it to its
       // self. that would leave the values identical but prevent a change in the superclass
       // from bubbling up that point
+      
+      // !! we have full controll of the method applying process, we could store... hm.... 
       
       // Object.freezeCurrentValues = function freezeCurrentValues(object){
       //   for (var p in object) object[p] = object[p];
@@ -164,17 +200,44 @@ var Klass = (function() {
     
     
 
-    function _getSuper(klass_or_instance){
-      if (!klass_or_instance) throw new Error('you must pass `this` to getSuper');
-      var superklass, supermethod, methodName = this.__methodName;
+    function _findAndCallSuperMethod(methodName, args){
+      var superklass, supermethod, isKlass = (this instanceof Klass);
+      if (!isKlass && !(this.klass instanceof Klass)) throw new Error('you are are fucked up');
 
-      superklass = (klass_or_instance instanceof Klass) ? klass_or_instance.superklass : klass_or_instance.klass.superklass;
-      if (superklass) supermethod = (klass_or_instance instanceof Klass) ? superklass[methodName] :
+      superklass = isKlass ? this.superklass : this.klass.superklass;
+      if (superklass) supermethod = isKlass ? superklass[methodName] :
         superklass.instance.prototype[methodName];
 
       if (typeof supermethod !== 'function') throw new Error("super: no superclass method '"+methodName+"'");
 
-      return supermethod; //.apply(klass_or_instance, arguments);
+      return supermethod.apply(this, args);
+    }
+    
+    
+    // before a method is pushed onto a class object or and instance prototype object it is wrapped by a
+    // method that binds it to its property name (or method name) forever. Upon calling setups up a this
+    // wrapper setupup the $super method
+    function _bindToMethodName(__method, __methodName){
+      var __requested_super = (argumentNames(__method)[0] == "$super");
+      __wrapper = function classNameBindingWrapper(){
+        var __context = this, __super = function(){
+          return _findAndCallSuperMethod.apply(__context, [__methodName, arguments]);
+        };
+        var args = toArray(arguments);
+        if (__requested_super) args.unshift(__super);
+        __method.$super = __super; // enable arguments.callee.$super() syntax;
+        var r = __method.apply(this, args); 
+        delete __method.$super;
+        return r;
+      };
+
+      __wrapper.methodName = __methodName;
+      __wrapper.__method = __method;
+
+      // disabled for debugging
+      __wrapper.valueOf = __method.valueOf.bind(__method);
+      __wrapper.toString = __method.toString.bind(__method);
+      return __wrapper;
     }
 
     function _include(source, extend){
@@ -183,22 +246,10 @@ var Klass = (function() {
 
       for (var i = 0, length = properties.length; i < length; i++) {
         var property = properties[i], value = source[property];
-        if (typeof value === 'function') {
-
-          value.__methodName || (value.__methodName = property); // casting this methods name
-          value.getSuper || (value.getSuper = bind(_getSuper, value, true)); // binding getSuper to method
-
-          if (!value.__superWraper && argumentNames(value)[0] == "$super"){
-            var __method = value;
-            value = function superWrapper(){
-              return __method.apply(this, [__method.getSuper(this)].concat(toArray(arguments)));
-            };
-            value.__superWraperFor = __method;
-            value.valueOf = bind(__method.valueOf, __method);
-            value.toString = bind(__method.toString, __method);
-            value.getSuper = __method.getSuper;
-          }
-        }
+        
+        if (typeof value === 'function' && !value.methodName)
+          value = _bindToMethodName(value, property);
+          
         if (extend)
           this[property] = value;
         else

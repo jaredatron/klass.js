@@ -1,12 +1,12 @@
 Test.Unit.Testcase.prototype.assertIn = function assertIn(param, obj, message){
   message = this.buildMessage(message || 'assertIn', 'object doesn\'t contain key <?>', param);
   this.assertBlock(message, function() { return (param in obj); });
-}
+};
 
 Test.Unit.Testcase.prototype.assertNotIn = function assertIn(param, obj, message){
   message = this.buildMessage(message || 'assertIn', 'object does contain key <?>', param);
   this.assertBlock(message, function() { return !(param in obj); });
-}
+};
 
 
 new Test.Unit.Runner({
@@ -35,20 +35,37 @@ new Test.Unit.Runner({
     this.assertIdentical(SteralBastard, carlose_mencia.klass);
   },
   
+  test_that_create_calls_initialize: function(){
+    var done = false;
+    new Klass({
+      initialize: function(){ done = true; }
+    }).create();
+
+    this.assert(done, 'initialize was not called by create');
+  },
+  
   test_that_klass_include_adds_methods_to_the_instance_and_not_the_klass: function(){
     var Truck = new Klass;
-    function drive(attribute){};
-    Truck.include({drive: drive});
-    this.assertIdentical(drive, Truck.create().drive, 'included methods are not identical');
-    this.assert(!('drive' in Truck));
+    this.assertNotIn('drive',Truck);
+    this.assertNotIn('drive',Truck.create());
+    
+    Truck.include({drive: function drive(){ return 'driving' }});
+    this.assertNotIn('drive',Truck);
+    this.assertIn('drive', Truck.create());
+    
+    this.assertEqual('driving', Truck.create().drive());
   },
   
   test_that_klass_extend_adds_methods_to_the_klass_and_not_the_instance: function(){
     var Boat = new Klass;
-    function sail(attribute){};
-    Boat.extend({sail: sail});
-    this.assertIdentical(sail, Boat.sail, 'extended methods are not identical');
-    this.assert(!('sail' in Boat.create()));
+    this.assertNotIn('sail',Boat);
+    this.assertNotIn('sail',Boat.create());
+    
+    Boat.extend({sail: function sail(){ return 'with my flippy floppies' }});
+    this.assertIn('sail',Boat);
+    this.assertNotIn('sail', Boat.create());
+    
+    this.assertEqual('with my flippy floppies', Boat.sail());
   },
   
   test_klass_subklasses_contains_all_its_subclasses: function(){
@@ -90,17 +107,17 @@ new Test.Unit.Runner({
   
   test_that_defineMethod_throws_an_error_when_given_an_unamed_function: function(){
     this.assertRaise('Error',function(){
-      new Klass().defineMethod(function(){})
+      new Klass().defineMethod(function(){});
     });
     this.assertRaise('Error',function(){
-      new Klass().defineInstanceMethod(function(){})
+      new Klass().defineInstanceMethod(function(){});
     });
     this.assertRaise('Error',function(){
-      new Klass().defineClassMethod(function(){})
+      new Klass().defineClassMethod(function(){});
     });
     this.assertRaise('Error',function(){
-      new Klass().def(function(){})
-    });    
+      new Klass().def(function(){});
+    });
   },
   
   test_that_objects_assigned_to_a_klass_instance_prototype_instantly_populate_to_klass_instances: function(){
@@ -132,7 +149,7 @@ new Test.Unit.Runner({
   },
   
   test_that_super_is_only_dynamically_pointed_at_its_ancestrial_counterpart: function(){
-    Dog.defineMethod(function getWeight(){ return 50; });
+    Dog.include({getWeight: function getDogWeight(){ return 50; }});
     var oboo = Dog.create();
     this.assertEqual(50, oboo.getWeight());
     var mittens = Cat.create();
@@ -162,7 +179,7 @@ new Test.Unit.Runner({
     
     Son.defineMethod(function exist(){
       // test.assertIdentical($super, arguments.callee.getSuper(this))
-      return arguments.callee.getSuper(this)();
+      return arguments.callee.$super();
     });
     
     test.assertEqual('i execute therefor i am', Son.create().exist());
@@ -173,29 +190,59 @@ new Test.Unit.Runner({
     
   },
   
-  test_methods_wrapped_in_super_can_be_moved_to_another_property: function(){
+  
+  test_that_methodName_casting_doesnt_affect_original_function: function(){
+    var Calc = new Klass([
+      function  plusFive(n){ return n + 5; },
+      function   plusSix(n){ return n + 6; },
+      function plusSeven(n){ return n + 7; },
+      function plusEight(n){ return n + 8; }
+    ]);
+    
+    var c = Calc.create();
+    this.assertEqual(10,  c.plusFive(5));
+    this.assertEqual(11,   c.plusSix(5));
+    this.assertEqual(12, c.plusSeven(5));
+    this.assertEqual(13, c.plusEight(5));
+    
+    window.Ti89 = new Klass(Calc, function Transient(){
+      function plusSuperWrapped($super, n){ return $super(n) + 1; };
+      function plusSuperUnWrapped(n){ return arguments.callee.$super(n) + 1; };
+      return {
+        plusFive:  plusSuperWrapped,
+        plusSix:   plusSuperWrapped,
+        plusSeven: plusSuperUnWrapped,
+        plusEight: plusSuperUnWrapped
+      }
+    });
+    
+    var t = Ti89.create();
+    this.assertEqual(11,  t.plusFive(5));
+    this.assertEqual(12,   t.plusSix(5));
+    this.assertEqual(13, t.plusSeven(5));
+    this.assertEqual(14, t.plusEight(5));
     
   },
   
-  // 
-  // test_that_alias_method_preseves_methos_pointed_to_at_time_of_alias: function(){
-  //   var Indecisive = new Klass(function Indecisive(){ with(this){
-  //     
-  //     this.isSmiling = false;
-  //     
-  //     def(function smile(){
-  //       this.alias
-  //     })
-  //     
-  //     return{
-  //       isSmiling: false;
-  //     }
-  //     
-  //   }});
-  //   
-  //   
-  // },
+  
+  test_that_alias_method_preseves_methos_pointed_to_at_time_of_alias: function(){
+    // var Indecisive = new Klass(function Indecisive(){ with(this){
+    //   
+    //   this.isSmiling = false;
+    //   
+    //   def(function smile(){
+    //     this.alias
+    //   })
+    //   
+    //   return{
+    //     isSmiling: false;
+    //   }
+    //   
+    // }});
     // 
+    
+  },
+    
     // 
     // Mamal.defineMethod(function getWeight(){
     //   return 5;

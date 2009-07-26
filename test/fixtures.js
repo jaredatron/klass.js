@@ -2,13 +2,13 @@ var SteralBastard = new Klass(function SteralBastard(){});
 
 
 var Mamal = new Klass(function Mamal(){ return {
-  initialize: function initialize(name){
+  initialize: function MamalInitialize(name){
     this.name = name || 'no name';
   },
-  speak: function speak(){
+  speak: function MamalSpeak(){
     return 'gergle gregle';
   },
-  getWeight: function getWeight(){
+  getWeight: function getMamalWeight(){
     return 10;
   }
 }});
@@ -31,7 +31,7 @@ var Cat = Klass(Mamal, function Cat(){ with(this){
 
 var FatDog = new Klass(Dog, function FatDog(){ return {
   
-  getWeight: function($super){
+  getWeight: function getFatDogWeight($super){
     return $super() + 15;
   }
   
