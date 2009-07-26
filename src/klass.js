@@ -107,20 +107,14 @@ var Klass = (function() {
     klass.subklasses = [];
 
 
+    var length = args.length, methodName;
+    while(klass.klassName === 'anonymous' && length--)
+      if (typeof args[length] === "function" && (methodName = getFunctionName(args[length])))
+        klass.klassName = capitalize(methodName);
 
-    // TODO move this ability to use blocks as definitions to the extend method
+
     for (var i=0; i < args.length; i++) {
-      var methods = args[i];
-      if (methods instanceof Array){
-        klass.defineMethod.apply(klass,methods);
-      }else{
-        if (typeof methods === "function"){
-          var klassName;
-          if (klassName = getFunctionName(methods)) klass.klassName = capitalize(klassName);
-          methods = bind(methods,klass)();
-        }
-        klass.include(methods);
-      }
+      klass.include(args[i]);
     };
 
     return klass;
@@ -237,10 +231,23 @@ var Klass = (function() {
       return __wrapper;
     }
 
-    function _include(source, extend){
-      if (typeof source == 'undefined') return this;
-      var properties = keys(source);
 
+    /*
+     *
+     */
+    function _include(source, extend){
+      if (typeof source === 'undefined') return this;
+
+      if (typeof source === 'function'){
+        source = bind(source, this)();
+      }
+
+      if (source instanceof Array){
+        this.defineMethod.apply(this,source);
+        return this;
+      }
+
+      var properties = keys(source);
       for (var i = 0, length = properties.length; i < length; i++) {
         var property = properties[i], value = source[property];
 
@@ -251,7 +258,6 @@ var Klass = (function() {
           this[property] = value;
         else
           this.instance.prototype[property] = value;
-
       }
       return this;
     }
