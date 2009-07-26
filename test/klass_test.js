@@ -11,6 +11,10 @@ Test.Unit.Testcase.prototype.assertNotIn = function assertIn(param, obj, message
 
 new Test.Unit.Runner({
 
+  test_klass_include_only_adds_one_property_to_global_js_context: function(){
+    this.assertEqual(window.preKlassIncludePropertySize, window.postKlassIncludePropertySize, 'global name space polited > 1');
+  },
+
   test_klass_name_is_set_to_anonymous_when_given_nothing: function() {
     this.assertEqual('anonymous', new Klass().klassName);
     this.assertEqual('anonymous', new Klass(function(){}).klassName);
@@ -205,9 +209,13 @@ new Test.Unit.Runner({
     this.assertEqual(12, c.plusSeven(5));
     this.assertEqual(13, c.plusEight(5));
 
+    function plusSuperWrapped($super, n){ return $super(n) + 1; };
+    function plusSuperUnWrapped(n){ return arguments.callee.$super(n) + 1; };
+
+    var plusSuperWrappedPropertiesLength   = Object.keys(plusSuperWrapped).length,
+        plusSuperUnWrappedPropertiesLength = Object.keys(plusSuperUnWrapped).length;
+
     window.Ti89 = new Klass(Calc, function Transient(){
-      function plusSuperWrapped($super, n){ return $super(n) + 1; };
-      function plusSuperUnWrapped(n){ return arguments.callee.$super(n) + 1; };
       return {
         plusFive:  plusSuperWrapped,
         plusSix:   plusSuperWrapped,
@@ -222,6 +230,8 @@ new Test.Unit.Runner({
     this.assertEqual(13, t.plusSeven(5));
     this.assertEqual(14, t.plusEight(5));
 
+    this.assertEqual(plusSuperWrappedPropertiesLength, Object.keys(plusSuperWrapped).length);
+    this.assertEqual(plusSuperUnWrappedPropertiesLength, Object.keys(plusSuperUnWrapped).length);
   },
 
 
