@@ -16,6 +16,10 @@ new Test.Unit.Runner({
   },
 
   test_klass_name_is_set_to_anonymous_when_given_nothing: function() {
+    this.assertNotNullOrUndefined(new Klass().klassName);
+    this.assertNotNullOrUndefined('anonymous', new Klass(function(){}).klassName);
+    this.assertNotNullOrUndefined('anonymous', new Klass({}).klassName);
+    
     this.assertEqual('anonymous', new Klass().klassName);
     this.assertEqual('anonymous', new Klass(function(){}).klassName);
     this.assertEqual('anonymous', new Klass({}).klassName);
@@ -269,7 +273,7 @@ new Test.Unit.Runner({
 
   test_that_alias_method_preseves_methos_pointed_to_at_time_of_alias: function(){
 
-    window.cWalken = Human.create()
+    window.cWalken = Human.create();
 
     this.assertEqual(100, cWalken.getWeight());
 
@@ -302,9 +306,35 @@ new Test.Unit.Runner({
   },
 
 
+  test_that_alias_method_preseves_methos_pointed_to_at_time_of_alias_SECOND_ATTEMPT: function(){
+    var OldMan = new Klass(function OldMan(){
+      this.def(function name(){ return 'Walter'; });
+    });
+    var walter = OldMan.create();
+    this.assertEqual('Walter', walter.name());
+    
+    var YoungMan = new Klass(OldMan, function YoungMan(){
+      this.def(function name($super){ return 'Reed not '+$super(); });
+    });
+    var reed = YoungMan.create();
+    this.assertEqual('Reed not Walter', reed.name());
+    
+    YoungMan.alias('handle', 'name');
+    this.assertEqual('Reed not Walter', reed.handle());
+
+    var Baby = new Klass(YoungMan, function Baby(){
+      // this.def(function handle($super){ console.log($super); return 'WWAAAA!!! '+$super(); })
+    });
+    this.assertEqual('WWAAAA!!! Reed not Walter', Baby.create().handle());
+    // this.assertEqual('Reed not Walter', Baby.create().handle());
+    // this.assertEqual('WWAAAA!!! Reed not Walter', Baby.create().cry());
+
+  },
+
+
   test_something_else: function(){
 
-    Liquid = new Klass('liauid',[
+    var Liquid = new Klass('liauid',[
       function flow(){
          return 'flowing';
       }
@@ -334,7 +364,7 @@ new Test.Unit.Runner({
     this.assertEqual('flowing slowly into sludge', ketsup.flow());
 
 
-  }
+  },
 
     //
     // Mamal.defineMethod(function getWeight(){
@@ -350,6 +380,16 @@ new Test.Unit.Runner({
 
 
 
-
+  test_that_instance_methods_are_inhereted: function(){
+    var A = new Klass;
+    A.defineInstanceMethod(function open(){ return 'a is open'; });
+    this.assertEqual('a is open', A.create().open());
+    
+    var B = new Klass(A);
+    this.assertEqual('a is open', B.create().open());
+    
+    A.defineInstanceMethod(function close(){ return 'a is closed'; });
+    this.assertEqual('a is closed', B.create().close());
+  }
 
 });

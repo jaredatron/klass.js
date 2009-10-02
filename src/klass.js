@@ -1,4 +1,6 @@
-var Klass = (function() {
+window.Klass = (function() {
+  
+  var emptyFunction = function(){};
 
   function toArray(iterable) {
     if (!iterable) return [];
@@ -39,12 +41,10 @@ var Klass = (function() {
         if (results.valueOf != Object.prototype.valueOf)
           results.push("valueOf");
       }
-
       return results;
     }
-
+    
     return keys;
-
   })();
 
   function capitalize(string){
@@ -65,15 +65,13 @@ var Klass = (function() {
     return bindWrapper;
   }
 
-  bind._valueOf = function valueOf(){ return this.__method.valueOf.apply(this.__method); }
-  bind._toString = function toString(){ return this.__method.toString.apply(this.__method); }
+  bind._valueOf = function valueOf(){ return this.__method.valueOf.apply(this.__method); };
+  bind._toString = function toString(){ return this.__method.toString.apply(this.__method); };
 
   function cloneWithInheritance(source){
-    var sourceKlass = function(){};
-    sourceKlass.prototype = source;
-    return new sourceKlass();
+    emptyFunction.prototype = source;
+    return new emptyFunction();
   };
-
 
   function applyNew(constructor, a){
     if (typeof a === 'undefined' || !('length' in a))
@@ -85,14 +83,11 @@ var Klass = (function() {
 
 
   var Klass = function Klass(){
-    var args = toArray(arguments), klass = this, superklass;
+    var args = toArray(arguments), klass = this;
 
-    if (arguments[0] instanceof Klass) superklass = args.shift();
-
-    if (superklass){
-      function constructor(){};
-      constructor.prototype = superklass;
-      klass = new constructor;
+    if (args[0] instanceof Klass){
+      var superklass = args.shift();
+      klass = cloneWithInheritance(superklass);
       klass.superklass = superklass;
       superklass.subklasses.push(klass);
     }
@@ -106,17 +101,14 @@ var Klass = (function() {
     klass.klassName = 'anonymous';
     klass.subklasses = [];
 
-
+    // Loop throught arguments in search of a className
     var length = args.length, methodName;
     while(klass.klassName === 'anonymous' && length--)
       if (typeof args[length] === 'string' && (methodName = args[length]) ||
           typeof args[length] === "function" && (methodName = getFunctionName(args[length])))
         klass.klassName = capitalize(methodName);
 
-
-    for (var i=0; i < args.length; i++) {
-      klass.include(args[i]);
-    };
+    for (var i=0; i < args.length; i++) klass.include(args[i]);
 
     return klass;
   };
@@ -194,12 +186,11 @@ var Klass = (function() {
 
 
     function _findAndCallSuperMethod(methodName, args){
-      var superklass, supermethod, isKlass = (this instanceof Klass);
+      var isKlass = (this instanceof Klass);
       if (!isKlass && !(this.klass instanceof Klass)) throw new Error('you are are fucked up');
 
-      superklass = isKlass ? this.superklass : this.klass.superklass;
-      if (superklass) supermethod = isKlass ? superklass[methodName] :
-        superklass.instance.prototype[methodName];
+      var supermethod, superklass = isKlass ? this.superklass : this.klass.superklass;
+      if (superklass) supermethod = isKlass ? superklass[methodName] : superklass.instance.prototype[methodName];
 
       if (typeof supermethod !== 'function') throw new Error("super: no superclass method '"+methodName+"'");
 
@@ -208,12 +199,14 @@ var Klass = (function() {
 
 
     // before a method is pushed onto a class object or and instance prototype object it is wrapped by a
-    // method that binds it to its property name (or method name) forever. Upon calling setups up a this
-    // wrapper setupup the $super method
+    // method that binds it to its property name (or method name) forever.
+    // This enables methods to be aliased or renamed/moved without breaking their (loose) connection to their
+    // super method. It also allows (unlike prototype) for there super methods to be modified. (like ruby)
     function _bindToMethodName(__method, __methodName){
       var __requested_super = (argumentNames(__method)[0] == "$super");
-      __wrapper = function classNameBindingWrapper(){
-        var __context = this, __super = function(){
+      var __wrapper = function methodNameBindingWrapper(){
+        var __context = this, __super = function $super(){
+          console.log('$super', __context, __methodName, arguments);
           return _findAndCallSuperMethod.apply(__context, [__methodName, arguments]);
         };
         var args = toArray(arguments);
