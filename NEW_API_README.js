@@ -1,22 +1,32 @@
+// a klass
+{
+  prototype: {
+    
+  }
+}
+
+
+
+
 // the base Klass object that all Klasses are extended from
 var Klass;
 
-// calling new class creates a new class
-var Frog = klass.create({});
+// calling Klass.create creates a new Klass
+var Frog = Klass.create({});
 // synonymous with new klass
 
-// calling class (without new) extends the given klass
+// calling klass extends the given klass
 klass(Frog, {});
 // => Frog (extended)
 // Note: this is synonymous with Object.extend(Frog.prototype, {})
 
-// calling class without passing it an instance of klass
+// calling klass without passing it an instance of klass
 klass({});
 // => throws an error
 
-// calling new class and passing in an instance of klass
-// creates a klass.create that extends from the given klass
-var BigFrog = klass.create(Frog, {});
+// calling Klass.create and passing in an instance of Klass
+// creates a new Klass that extends from the given klass
+var BigFrog = Klass.create(Frog, {});
 
 
 // klass accepts either Objects or Functions for definition
@@ -24,13 +34,13 @@ var BigFrog = klass.create(Frog, {});
 //  Functions are called in the context of the [klass] object and
 //    the returned object is extended onto the instance prototype
 
-var Frog = klass.create({
+var Frog = Klass.create({
   things: [],
   ass: function(){},
   face: function(){}
 });
 
-var Frog = klass.create(function(){
+var Frog = Klass.create(function(){
   // this == the frog klass object (Frog)
   
   // returned object is extended upon the
@@ -73,6 +83,16 @@ hooper.leap();
 
 
 
+var Frog = Klass.create(function Frog(){
+  this.thing = 'goes on the class';
+  this.prototype.then_this = 'goes on the instance';
+  return {
+    and_this: 'goes on the instance'
+  };
+})
+
+
+
 
 // IDEAS -----
 
@@ -108,7 +128,7 @@ Function.prototype.$super = function $super(instance){
 // when defining a new class with a function we can derive the
 // class name of the klass by parsing the first argument's name
 // JARED: do not get caught up with klass names until super works
-var Frog = klass.create(function(Frog){
+var Frog = Klass.create(function(Frog){
   Frog.whatever = function(){};
 });
 
