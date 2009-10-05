@@ -1,7 +1,7 @@
 // a klass
 {
   prototype: {
-    
+
   }
 }
 
@@ -42,7 +42,7 @@ var Frog = Klass.create({
 
 var Frog = Klass.create(function(){
   // this == the frog klass object (Frog)
-  
+
   // returned object is extended upon the
   // class instance prototype object
   return {};
@@ -83,7 +83,7 @@ hooper.leap();
 
 
 
-var Frog = Klass.create(function Frog(){
+var Frog = Klass.create(function (Frog){
   this.thing = 'goes on the class';
   this.prototype.then_this = 'goes on the instance';
   return {
@@ -91,6 +91,18 @@ var Frog = Klass.create(function Frog(){
   };
 })
 
+
+var Parent = Klass.create({
+  age: function(){
+    return 'running';
+  };
+})
+
+var Child = Klass.create(Parent, {
+  run: function(){
+    return arguments.callee.$super(this)+' even faster';
+  };
+})
 
 
 
@@ -103,19 +115,6 @@ function(){
   return arguments.callee.$super(this, arguments);
 }
 
-Function.prototype.$super = function $super(instance){
-  var method = this, klass = instance.klass;
-  
-  if (!klass) throw new Error('cannot call super outside of a class context');
-
-  // if this method doesnt have a name
-  if (!method.name){
-    // loop through all the values in the instance object and find the name of its key
-    method.name = $H(instance).find(function(pair){ return methods === pair.value; })[0];
-  }
-  // traverse this klass's ancestry for methods of the same name
-
-};
 
 // this way if you want to be able to alias methods and have the alias's super call up
 // the chain using the original method's name you just need to name your method or

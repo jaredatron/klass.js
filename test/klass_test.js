@@ -1,13 +1,3 @@
-Test.Unit.Testcase.prototype.assertIn = function assertIn(param, obj, message){
-  message = this.buildMessage(message || 'assertIn', 'object doesn\'t contain key <?>', param);
-  this.assertBlock(message, function() { return (param in obj); });
-};
-
-Test.Unit.Testcase.prototype.assertNotIn = function assertIn(param, obj, message){
-  message = this.buildMessage(message || 'assertIn', 'object does contain key <?>', param);
-  this.assertBlock(message, function() { return !(param in obj); });
-};
-
 Test.Unit.Testcase.prototype.assertInheritorOf = function assertInstanceOf(parent, child, message) {
   message = this.buildMessage(message || 'assertInstanceOf', '<?> was not an inheritor of the expected type', child);
   this.assertBlock(message, function() { 
@@ -17,18 +7,6 @@ Test.Unit.Testcase.prototype.assertInheritorOf = function assertInstanceOf(paren
       parent = emptyFunction;
     }
     return (child instanceof parent); 
-  });
-};
-
-Test.Unit.Testcase.prototype.assertNotInheritorOf = function assertInstanceOf(parent, child, message) {
-  message = this.buildMessage(message || 'assertInstanceOf', '<?> was an inheritor of the expected type', child);
-  this.assertBlock(message, function() {
-    if (typeof parent !== 'function'){
-      var emptyFunction = function(){};
-      emptyFunction.prototype = parent;
-      parent = emptyFunction;
-    }
-    return !(child instanceof parent);
   });
 };
 
@@ -114,13 +92,26 @@ new Test.Unit.Runner({
     this.assertEqual('times', Frog.create().fun);
   },
   
-  test_that_klassname_can_be_set_by_a_string_passed_as_a_definition: function(){
+  test_that_klass_name_can_be_set_by_a_string_passed_as_a_definition: function(){
     this.assertEqual('Shoe', Klass.create('Shoe').klass_name);
   },
   
-  test_that_klassnames_are_assumed_by_function_definitions_when_possible: function(){
-    var MyKlass = Klass.create(function Frog(){});
-    this.assertEqual('Frog', MyKlass.klass_name);
+  test_that_klass_names_are_assumed_by_function_definitions_when_possible: function(){
+    var MyKlass = Klass.create(function(Donkey){});
+    this.assertEqual('Donkey', MyKlass.klass_name);
+  },
+  
+  test_that_klass_definition_functions_are_passed_the_klass_and_prototype_objects: function(){
+    var the_this, the_klass, the_instance;
+    var Building = Klass.create(function(Building, instance){
+      the_this = this;
+      the_klass = Building;
+      the_instance = instance;
+    });
+    this.assertEqual(the_this, Building);
+    this.assertEqual(the_klass, Building);
+    this.assertEqual(the_this.prototype, Building.prototype);
+    this.assertEqual(the_instance, Building.prototype);
   },
   
   test_that_modification_to_parent_klass_are_reflected_in_child_klass: function(){
@@ -141,5 +132,218 @@ new Test.Unit.Runner({
     this.assertEqual('free', Child.status);
   },
   
-  stupid_commas:function(){}
+  test_that_klass_extend_method_extends_the_klass_object: function(){
+    var Table = Klass.create();
+    Table.extend({build:'building'});
+    this.assertEqual('building', Table.build);
+  },
+  test_that_klass_include_method_extends_the_klass_prototype_object: function(){
+    var Table = Klass.create();
+    Table.include({legs:4});
+    this.assertEqual(4, Table.create().legs);
+  },
+  test_that_klass_intance_extend_method_extends_the_klass_object: function(){
+    var Table = Klass.create();
+    var end_table = Table.create();
+    end_table.extend({has_lamp:'oooh yeah'});
+    this.assertEqual('oooh yeah', end_table.has_lamp);
+  },
+
+
+  test_that_Function_super_throws_error_when_called_out_of_klass_context: function(){
+    this.assertRaise('TypeError', function(){
+      arguments.callee.$super();
+    });
+    this.assertRaise('Error', function(){
+      arguments.callee.$super({});
+    });
+
+    var Dog = Klass.create({
+      run: function(){
+        return 'running';
+      }
+    });
+    
+    var BigDog = Klass.create(Dog, {
+      run: function(){
+        return arguments.callee.$super(this)+' fast';
+      }
+    });
+
+    this.assertNothingRaised(function(){
+      BigDog.create().run();
+    });
+    this.assertEqual('running fast', BigDog.create().run());
+    
+    Dog.callAll = function(){ return 24; };
+    BigDog.callAll = function(){ 
+      return arguments.callee.$super(this) - 10; 
+    };
+    
+    this.assertNothingRaised(function(){
+      BigDog.callAll();
+    });
+    this.assertEqual(14, BigDog.callAll());
+    
+  },
+  
+  test_that_super_throws_an_error_when_a_super_method_doesnt_exist: function(){
+    var Hero = Klass.create({
+      fly: function(){
+        return arguments.callee.$super(this);
+      }
+    });
+    
+    this.assertRaise('NoSuperError', function(){
+      Hero.create().fly();
+    });
+    
+    Hero.breed = function(){
+      return arguments.callee.$super(this);
+    };
+    
+    this.assertRaise('NoSuperError', function(){
+      Hero.breed();
+    });
+    
+    
+    
+  },
+  
+  test_that_super_traverses_past_a_non_matching_parent_all_the_way_to_klass: function(){
+    
+    var GrandChild = Klass.create(Klass.create(Klass.create(Klass.create(Klass.create()))));
+    this.assertEqual(Klass, GrandChild.superklass.superklass.superklass.superklass.superklass);
+    Klass.pumpIt = function(){ return 'pumping'; };
+    this.assertEqual('pumping', GrandChild.pumpIt());
+    
+    GrandChild.pumpIt = function(){ return arguments.callee.$super(this)+' it hard core'; };
+    this.assertEqual('pumping it hard core', GrandChild.pumpIt());
+  },
+  
+  test_that_super_takes_arguments_properly: function(){
+    var Daddy = Klass.create({
+      agePlus: function(n){ return 45 + n;}
+    });
+    this.assertEqual(55, Daddy.create().agePlus(10));
+    
+    var Baby = Klass.create(Daddy, {
+      agePlus: function(n){ return arguments.callee.$super(this, [(n - 20)]); }
+    });
+    this.assertEqual(35, Baby.create().agePlus(10));
+    
+    Daddy.update = function(value){ return value+' UPDATED'; };
+    Baby.update = function(value){ return arguments.callee.$super(this, [value]); };
+    this.assertEqual('TPS Reports UPDATED', Baby.update('TPS Reports'));
+    
+  },
+  
+  test_that_alias_method_works: function(){
+    
+    var Country = Klass.create(function Country(){
+      this.count = function(){ return 5; };
+      this.aliasMethod('size', 'count');
+      
+      this.prototype.war = function(){ return 'waring'; };
+      this.prototype.aliasMethod('fight', 'war');
+    });
+    this.assertEqual(5, Country.count());
+    this.assertEqual(5, Country.size());
+    this.assertEqual('waring', Country.create().war());
+    this.assertEqual('waring', Country.create().fight());
+  },
+  
+  test_that_aliased_methods_are_not_overwrited_when_the_original_method_is: function(){
+    var Container = Klass.create(function(){
+      this.find = function(){ return 12; };
+    });
+    this.assertEqual(12, Container.find());
+    
+    var Bucket = Klass.create(Container, function(){
+      this.aliasMethod('lookFor', 'find');
+      this.find = function(){ return 40; };
+    });
+    this.assertEqual(12, Bucket.lookFor());
+    this.assertEqual(40, Bucket.find());
+    
+  },
+  
+  test_that_alias_method_calls_the_right_super_method: function(){
+    var Animal = Klass.create({
+      speak: function(words){ return words; }
+    });
+    var Dog = Klass.create(Animal, function Dog(){
+      this.prototype.speak = function(words){
+        return arguments.callee.$super(this, ['WOOF '+words+' WOOF']);
+      };
+      this.prototype.aliasMethod('bark','speak');
+    });
+    this.assertEqual('WOOF ball? WOOF', Dog.create().bark('ball?'));
+  },
+  
+  test_that_get_super_works: function(){
+    var Parent = Klass.create(function (Parent){
+      Parent.comeHere = function comeHere1(){ return 'coming'; };
+      function call1(){ return 'yes?'; }
+      return {call:call1};
+    });
+
+    var Father = Klass.create(Parent, function (Father){
+      Father.comeHere = function comeHere2(){ 
+        var $super = arguments.callee.getSuper(this);
+        return 'father is '+$super(); 
+      };
+      function call2(){ 
+        var $super = arguments.callee.getSuper(this);
+        return $super()+' what?'; 
+      }
+      function brandNew(){
+        return arguments.callee.getSuper(this).apply(this,arguments);
+      };
+      return {call:call2, brandNew:brandNew};
+    });
+    
+    this.assertEqual('father is coming', Father.comeHere());
+    this.assertEqual('yes? what?', Father.create().call());
+    this.assertRaise('TypeError', function(){
+      Father.create().brandNew();
+    });
+  },
+  
+  test_that_get_super_works_for_aliased_methods: function(){
+    var Parent = Klass.create(function (Parent){
+      Parent.comeHere = function comeHere1(){ return 'coming'; };
+      function call1(){ return 'yes?'; }
+      return {call:call1};
+    });
+
+    var Father = Klass.create(Parent, function (Father){
+      Father.comeHere = function comeHere2(){ 
+        var $super = arguments.callee.getSuper(this);
+        return 'father is '+$super(); 
+      };
+      Father.aliasMethod('getOverHere','comeHere');
+      function call2(){ 
+        var $super = arguments.callee.getSuper(this);
+        return $super()+' what?'; 
+      }
+      function brandNew(){
+        return arguments.callee.getSuper(this).apply(this,arguments);
+      };
+      return {call:call2, brandNew:brandNew};
+    });
+    
+    klass(Father, function(){ with(this.prototype){
+      aliasMethod('getOverHere','comeHere');
+      aliasMethod('summon','call');
+      aliasMethod('fresh','brandNew');
+    }});
+    
+    this.assertEqual('father is coming', Father.getOverHere());
+    this.assertEqual('yes? what?', Father.create().summon());
+    this.assertRaise('TypeError', function(){
+      Father.create().fresh();
+    });
+  }
+  
 });
