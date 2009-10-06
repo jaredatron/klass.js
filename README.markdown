@@ -56,41 +56,86 @@ Klass.js is a more feature rich implementation of Ruby like Class inheritance in
 
 #### Class and Instance inheritance
 
+    var LifeForm = Klass.create();
     
+    LifeForm.birth = function(){ return 'born'; };
+    LifeForm.prototype.alive = true;
     
-#### Pretty class editing
+    var Ameba = Klass.create(LifeForm);
+    
+    Ameba.birth();
+    //-> 'born'
+    
+    LifeForm.birth = function(){ return 'waaaa waaaa'; };
+    
+    Ameba.birth();
+    //-> 'waaaa waaaa'
+    
+    var amy = Ameba.create();
+    
+    amy.alive;
+    //-> true
+    
+    LifeForm.prototype.alive = false;
+    
+    amy.alive
+    //-> false
+    
+    amy.klass.birth();
+    //-> 'waaaa waaaa'
+    
+#### Pretty Class Reopening
 
-    klass(Human,{
-      aNewMethod: function(){}
+    var Puppet = Klass.create();
+    
+    klass(Puppet, function(self){
+      this.initialize: function(){
+        ...
+      };
+      
+      self.aNewClassMethod = function(){
+        ...
+      };
     });
     
-
-    klass(Human,function(){
-      this.aNewClassMethod = function(){};
-      this.proto
+    
+    klass(Puppet,{
+      aNewInstanceMethod: function(){
+        ...
+      }
     });
     
+#### klass_name
 
+  In order to provide pretty toString values, making your Firebug experience that much better, we guess the klass_name from
+  either a passed in String or the name of the first argument of the first definition function that has one
+
+    var Frog = Klass.create(function(Frog){ ... });
+    Frog.klass_name
+    //-> 'Frog'
+    
+    Klass.create('KittyCat',{...}).klass_name
+    //-> 'KittyCat'
 
 #### Class definitions via Function (more ruby like)
 
     var Human = Klass.create(function(Human, instance){
-      // this === Human
+      // this === Human.prototype
       // Human === window.Human
       // instance == Human.prototype
       // Human.klass_name == 'Human' (klass_name is infered by the first argument of the given definition function)
 
-      this.instances = [];
+      Human.instances = [];
 
       // create a class method
-      this.findByName = function findByName(name){
+      Human.findByName = function findByName(name){
         // this === Human
         return this.instances.find(function(instance){
           return instance.name == name;
         });
       };
 
-      function initialize(name){
+      this.initialize = function(name){
         // this == Human:instance:X
         // this.klass === Human
         this.klass.instances.push(this);
@@ -103,7 +148,6 @@ Klass.js is a more feature rich implementation of Ruby like Class inheritance in
 
       // class instance (prototype) is extended with returned object
       return {
-        initialize: initialize,
         getName: getName
       };
     });
@@ -136,7 +180,7 @@ Klass.js is a more feature rich implementation of Ruby like Class inheritance in
       // to Robot.prototype.getModelNumber as well as setting
       // Robot.prototype.getModelNumber.method_name to 'getName' so that super
       // knows to crawl up to the corret super method
-      Robot.prototype.aliasMethod('getModelNumber', 'getName');
+      this.aliasMethod('getModelNumber', 'getNaxme');
     });
     
     Robot.create('Bender').getModelNumber();
@@ -145,9 +189,24 @@ Klass.js is a more feature rich implementation of Ruby like Class inheritance in
 #### Extend and Include
   We're also a bit more Ruby like when it comes to mixins.
   
-    var FourWheels = {
-      wheels: 4,
-      
+    var MotorVehicle = {
+      drive: function(){ return "driving"; }
     }
-    var Car = 
     
+    var Drivables = {
+      createTruck: function(){ return this.create("truck"); }
+    }
+    
+    var Car = Klass.create(function(Car){
+      this.initialize = function(type){
+        this.type = type;
+      };
+      Car.include(MotorVehicle);
+      Car.extend(Drivables);
+    });
+    
+    Car.create().drive();
+    //-> 'driving'
+    
+    Car.createTruck();
+    //-> [Car:instance type=truck klass=Car]
