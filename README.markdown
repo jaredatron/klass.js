@@ -53,7 +53,8 @@ Klass.js is a more feature rich implementation of Ruby like Class inheritance in
     //-> alerts "You should probably run. He looks really mad."
 
 ### Now. Where we differ
-
+    
+    
 #### Class and Instance inheritance
 
     var LifeForm = Klass.create();
