@@ -238,10 +238,10 @@ new Test.Unit.Runner({
 
   test_that_Function_super_throws_error_when_called_out_of_klass_context: function(){
     this.assertRaise('Error', function(){
-      arguments.callee.$super();
+      arguments.callee.applySuper();
     });
     this.assertRaise('Error', function(){
-      arguments.callee.$super({});
+      arguments.callee.applySuper({});
     });
 
     var Dog = Klass.create({
@@ -252,7 +252,7 @@ new Test.Unit.Runner({
 
     var BigDog = Klass.create(Dog, {
       run: function(){
-        return arguments.callee.$super(this)+' fast';
+        return arguments.callee.applySuper(this)+' fast';
       }
     });
 
@@ -263,7 +263,7 @@ new Test.Unit.Runner({
 
     Dog.callAll = function(){ return 24; };
     BigDog.callAll = function(){
-      return arguments.callee.$super(this) - 10;
+      return arguments.callee.applySuper(this) - 10;
     };
 
     this.assertNothingRaised(function(){
@@ -275,7 +275,7 @@ new Test.Unit.Runner({
 
   test_that_super_throws_an_error_when_not_passed_a_context_object: function(){
     var Supers = {
-      callSuper: function(){ return arguments.callee.$super(); },
+      callSuper: function(){ return arguments.callee.applySuper(); },
       callGetSuper: function(){ return arguments.callee.getSuper(); }
     };
 
@@ -304,7 +304,7 @@ new Test.Unit.Runner({
   test_that_super_throws_an_error_when_a_super_method_doesnt_exist: function(){
     var Hero = Klass.create({
       fly: function(){
-        return arguments.callee.$super(this);
+        return arguments.callee.applySuper(this);
       }
     });
 
@@ -313,12 +313,31 @@ new Test.Unit.Runner({
     });
 
     Hero.breed = function(){
-      return arguments.callee.$super(this);
+      return arguments.callee.applySuper(this);
     };
 
     this.assertRaise('NoSuperError', function(){
       Hero.breed();
     });
+  },
+  
+  test_that_super_methods_recieve_arguments_correctly: function(){
+    var Parent = Klass.create({
+      runApplySuper: function(){ return arguments; },
+      runCallSuper: function(){ return arguments; }
+    });
+    
+    var Child = Klass.create(Parent, {
+      runApplySuper: function(){ 
+        return arguments.callee.applySuper(this, arguments);
+      },
+      runCallSuper: function(a,b,c,d){ 
+        return arguments.callee.callSuper(this, a,b,c,d);
+      }
+    });
+    var sauce = {sauce:true};
+    this.assertEnumEqual(['a',1,'steak',sauce], Child.create().runApplySuper('a',1,'steak',sauce));
+    this.assertEnumEqual(['a',1,'steak',sauce], Child.create().runCallSuper( 'a',1,'steak',sauce));
   },
 
   // rename this test its not exactly how it works
@@ -329,7 +348,7 @@ new Test.Unit.Runner({
     Klass.pumpIt = function(){ return 'pumping'; };
     this.assertEqual('pumping', GrandChild.pumpIt());
 
-    GrandChild.pumpIt = function(){ return arguments.callee.$super(this)+' it hard core'; };
+    GrandChild.pumpIt = function(){ return arguments.callee.applySuper(this)+' it hard core'; };
     this.assertEqual('pumping it hard core', GrandChild.pumpIt());
   },
 
@@ -340,12 +359,12 @@ new Test.Unit.Runner({
     this.assertEqual(55, Daddy.create().agePlus(10));
 
     var Baby = Klass.create(Daddy, {
-      agePlus: function(n){ return arguments.callee.$super(this, [(n - 20)]); }
+      agePlus: function(n){ return arguments.callee.applySuper(this, [(n - 20)]); }
     });
     this.assertEqual(35, Baby.create().agePlus(10));
 
     Daddy.update = function(value){ return value+' UPDATED'; };
-    Baby.update = function(value){ return arguments.callee.$super(this, [value]); };
+    Baby.update = function(value){ return arguments.callee.applySuper(this, [value]); };
     this.assertEqual('TPS Reports UPDATED', Baby.update('TPS Reports'));
 
   },
@@ -386,7 +405,7 @@ new Test.Unit.Runner({
     });
     var Dog = Klass.create(Animal, function(Dog){
       this.speak = function(words){
-        return arguments.callee.$super(this, ['WOOF '+words+' WOOF']);
+        return arguments.callee.applySuper(this, ['WOOF '+words+' WOOF']);
       };
       this.aliasMethod('bark','speak');
     });
@@ -469,7 +488,7 @@ new Test.Unit.Runner({
 
     var FakeHuman = Klass.create(Human, {
       getName: function(){
-        return arguments.callee.$super(this)+' the fake human';
+        return arguments.callee.applySuper(this)+' the fake human';
       }
     });
 

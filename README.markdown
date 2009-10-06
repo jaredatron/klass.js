@@ -20,7 +20,7 @@ Klass.js is a more feature rich implementation of Ruby like Class inheritance in
     // subclassing Animal
     var Snake = Klass.create(Animal, {
       initialize: function(name) {
-        arguments.callee.$super(this,[name, 'hissssssssss']);
+        arguments.callee.applySuper(this,[name, 'hissssssssss']);
       }
     });
 
@@ -32,7 +32,7 @@ Klass.js is a more feature rich implementation of Ruby like Class inheritance in
     // adding Snake#speak (with a supercall)
     Snake.include({
       speak: function() {
-        arguments.callee.$super(this);
+        arguments.callee.callSuper(this);
         alert("You should probably run. He looks really mad.");
       }
     });
@@ -200,14 +200,14 @@ Klass.js is a more feature rich implementation of Ruby like Class inheritance in
 
 #### Super
   Prototype's $super works by defining a methods relationship to it's super method
-  when it's defined using addMethods. Our $super implementation is a bit more verbose
+  when it's defined using addMethods. Our super implementation is a bit more verbose
   but avoids that extra work and allows you to move Functions around any way you like.
 
     var Human; // see above example
 
     var FakeHuman = Klass.create(Human, {
       getName: function(){
-        return arguments.callee.$super(this)+' the fake human';
+        return arguments.callee.callSuper(this)+' the fake human';
       }
     });
 
