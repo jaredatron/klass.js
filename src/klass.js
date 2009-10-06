@@ -77,7 +77,7 @@
     toString: function toObject(){
       return this.klass.prototype === this ?
         Object.prototype.toString(this):
-        "[object "+this.klass.klass_name+":instance]";
+        "[object "+(this.klass.klass_name||'AnonymousKlass')+":instance]";
     },
     valueOf: function valueOf(){ return this; },
     extend: function extend(object){ return _extend(this, object); },
@@ -86,13 +86,13 @@
     instanceOf: instanceOf
   });
 
-  function klassInstance(){
-    if ('initialize' in this) return this.initialize.apply(this,arguments);
+  function klassInstance(args){
+    if ('initialize' in this) return this.initialize.apply(this,args);
   }
 
   function createKlassInstance(){
     klassInstance.prototype = this.prototype;
-    return new klassInstance;
+    return new klassInstance(arguments);
   }
 
   function findKlassNameInDefinitions(definitions){
