@@ -2,7 +2,6 @@
 
   var emptyFunction = function(){};
 
-  // Helper Methods
   function _extend(destination, source) {
     for (var property in source)
       destination[property] = source[property];
@@ -14,7 +13,7 @@
     return new emptyFunction();
   };
 
-  function inheritorOf(parent,child){
+  function inheritorOf(parent, child){
     if (typeof parent !== 'function'){
       emptyFunction.prototype = parent;
       parent = emptyFunction;
@@ -45,16 +44,11 @@
     return names.length == 1 && !names[0] ? [] : names;
   }
 
+  function capitalize(string){
+    return string.charAt(0).toUpperCase() + string.substring(1);
+  }
 
-
-
-
-
-  // Klass ->
-
-  // methods shared by both Klass and Klass.prototype
   klass.object = {
-    extend: function extend(object){ return _extend(this, object); },
     aliasMethod: function aliasMethod(alias_method_name, method_name){
       var _method = this[method_name];
       var alias = function(){ return _method.apply(this, arguments); };
@@ -63,7 +57,7 @@
       return this;
     }
   };
-
+  
   window.Klass = cloneWithInheritance(klass.object);
   _extend(window.Klass, {
     klass: Klass,
@@ -71,8 +65,11 @@
     toString: function toObject(){ return "[object "+(this.klass_name||'AnonymousKlass')+"]"; },
     valueOf: function valueOf(){ return this; },
     subklasses: [],
+    extend: function extend(object){ return _extend(this, object); },
     include: function include(object){ _extend(this.prototype, object); return this; }
   });
+
+  function instanceOf(_klass){ return inheritorOf(_klass.prototype, this); }
 
   Klass.prototype = cloneWithInheritance(klass.object);
   _extend(Klass.prototype, {
@@ -83,30 +80,33 @@
         "[object "+this.klass.klass_name+":instance]";
     },
     valueOf: function valueOf(){ return this; },
-    extend: function extend(object){ return _extend(this, object); }
+    extend: function extend(object){ return _extend(this, object); },
+    isA: instanceOf,
+    kindOf: instanceOf,
+    instanceOf: instanceOf
   });
 
   function klassInstance(){
     if ('initialize' in this) return this.initialize.apply(this,arguments);
-  };
+  }
 
   function createKlassInstance(){
     klassInstance.prototype = this.prototype;
     return new klassInstance;
-  };
+  }
 
   function findKlassNameInDefinitions(definitions){
     for (var i=0; i < definitions.length; i++) {
-      if (typeof definitions[i] === 'function')
-        var klass_name = getFunctionArgumentNames(definitions[i])[0];
-      if (typeof definitions[i] === 'string' && definitions[i].length)
-        var klass_name = definitions[i];
-      if (klass_name) return klass_name;
+      var def = definitions[i];
+      if (typeof def === 'function')
+        var klass_name = getFunctionArgumentNames(def)[0];
+      if (typeof def === 'string' && def.length && def.match(/^[a-zA-Z_$]+$/))
+        var klass_name = def;
+      if (klass_name) return capitalize(klass_name);
     };
   }
 
   function createKlass(superklass){
-    if (this === Klass)
     var defs = toArray(arguments);
     var superklass = isKlass(defs[0]) ? defs.shift() : Klass;
     var _klass = cloneWithInheritance(superklass);
@@ -119,14 +119,19 @@
     defs.unshift(_klass);
     klass.apply(window,defs);
     return _klass;
-  };
+  }
 
   Klass.create = function create(){
     return (this === Klass) ? createKlass.apply(this, arguments) : createKlassInstance.apply(this, arguments);
   };
 
-  // klass sudo operator
-  window.klass = function klass(_klass){
+  $K = function $K(){
+    return Klass.create.apply(Klass, arguments);
+  };
+
+
+  // documented in readme
+  function klass(_klass){
     if (!isKlass(_klass)) throw new Error('expected instance of Klass');
     var definitions = Array.prototype.slice.apply(arguments, [1]);
     for (var i=0; i < definitions.length; i++) {
@@ -135,6 +140,7 @@
       if (typeof definition === 'object') _extend(_klass.prototype, definition);
     };
   };
+  window.klass = klass;
 
   function super_not_found_error(error){
     error.message = "super: no superclass method";
@@ -149,8 +155,6 @@
 
     var method = this, klass = klass_context ? context : context.klass;
 
-    // method.method_name is used to cast a method's name, this is used for things like aliasing
-    // to maintian the super tree
     var method_name = method.method_name || (function() {
       for (key in context) if (context[key] === method) return key;
     })();
@@ -161,9 +165,6 @@
     return super_method;
   };
 
-  // function(){
-  //   return arguments.callee.$super(this, arguments);
-  // }
   Function.prototype.$super = function $super(context, args){
     if (args && Object.prototype.toString.apply(args) !== "[object Array]")
       throw new TypeError('second argument to Function.prototype.$super must be an array');

@@ -61,6 +61,17 @@ new Test.Unit.Runner({
     this.assertEqual(Frog.subklasses.last(), BigFrog);
   },
   
+  test_that_infered_klass_names_are_capitolized: function(){
+    this.assertEqual('LowerCase', Klass.create('lowerCase').klass_name);
+    this.assertEqual('LowerCase', Klass.create(function(lowerCase){}).klass_name);
+  },
+  
+  test_that_klass_names_defined_with_a_string_do_not_have_invalid_charactors: function(){
+    this.assertEqual('LowerCase', Klass.create('lowerCase').klass_name);
+    this.assertEqual('LowerCase', Klass.create(function(lowerCase){}).klass_name);
+    this.assertEqual(undefined, Klass.create('with spaces').klass_name);
+  },
+  
   test_that_creating_a_klass_with_inheritance_sets_superklass_to_the_given_klass: function(){
     var Frog = Klass.create();
     var BigFrog = Klass.create(Frog);
@@ -132,6 +143,15 @@ new Test.Unit.Runner({
     this.assertEqual('free', Child.status);
   },
   
+  test_that_klass_prototype_initialize_gets_run_when_instances_are_created: function(){
+    var Car = Klass.create({
+      initialize: function(){
+        this.init_was_run = 'yep';
+      }
+    });
+    this.assertEqual('yep', Car.create().init_was_run);
+  },
+  
   test_that_klass_extend_method_extends_the_klass_object: function(){
     var Table = Klass.create();
     Table.extend({build:'building'});
@@ -149,6 +169,21 @@ new Test.Unit.Runner({
     this.assertEqual('oooh yeah', end_table.has_lamp);
   },
 
+  test_that_Klass_instance_isA_works: function(){
+    var LifeForm = Klass.create();
+    var Animal = Klass.create(LifeForm);
+    var Insect = Klass.create(LifeForm);
+    var Dog = Klass.create(Animal);
+    var Cockroach = Klass.create(Insect);
+    
+    this.assert(Dog.create().isA(LifeForm));
+    this.assert(Dog.create().isA(Animal));
+    this.assert(!Dog.create().isA(Insect));
+    
+    this.assert(Cockroach.create().isA(LifeForm));
+    this.assert(Cockroach.create().isA(Insect));
+    this.assert(!Cockroach.create().isA(Animal));
+  },
 
   test_that_Function_super_throws_error_when_called_out_of_klass_context: function(){
     this.assertRaise('TypeError', function(){
@@ -205,11 +240,9 @@ new Test.Unit.Runner({
     this.assertRaise('NoSuperError', function(){
       Hero.breed();
     });
-    
-    
-    
   },
   
+  // rename this test its not exactly how it works
   test_that_super_traverses_past_a_non_matching_parent_all_the_way_to_klass: function(){
     
     var GrandChild = Klass.create(Klass.create(Klass.create(Klass.create(Klass.create()))));
