@@ -133,6 +133,7 @@
   window.klass = klass;
 
   Function.prototype.getSuper = function getSuper(context){
+    if (!context) throw new Error('you must pass `this` as the first argument to getSuper');
     var klass_context = isKlass(context) ? true :
                        isKlassInstance(context) ? false : null;
     if (klass_context === null) throw new Error('cannot call super outside of a klass context');
@@ -150,6 +151,7 @@
   };
 
   Function.prototype.$super = function $super(context, args){
+    if (!context) throw new Error('you must pass `this` as the first argument to $super');
     if (args && Object.prototype.toString.apply(args) !== "[object Array]")
       throw new TypeError('second argument to Function.prototype.$super must be an array');
     var super_method = this.getSuper(context);

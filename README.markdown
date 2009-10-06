@@ -5,7 +5,7 @@ Klass.js is a more feature rich implementation of Ruby like Class inheritance in
 ##Examples
   Klass.js supports a syntax very similar to Prototype's Class. Compare the following code to the exmaples given in the Prototype documentation:
   <http://api.prototypejs.org/language/class.html#addmethods-instance_method>
- 
+
     var Animal = Klass.create({
       initialize: function(name, sound) {
         this.name  = name;
@@ -51,60 +51,60 @@ Klass.js is a more feature rich implementation of Ruby like Class inheritance in
     ringneck.speak();
     //-> alerts "Ringneck snarls: hissssssss!"
     //-> alerts "You should probably run. He looks really mad."
-    
+
 ### Now. Where we differ
 
 #### Class and Instance inheritance
 
     var LifeForm = Klass.create();
-    
+
     LifeForm.birth = function(){ return 'born'; };
     LifeForm.prototype.alive = true;
-    
+
     var Ameba = Klass.create(LifeForm);
-    
+
     Ameba.birth();
     //-> 'born'
-    
+
     LifeForm.birth = function(){ return 'waaaa waaaa'; };
-    
+
     Ameba.birth();
     //-> 'waaaa waaaa'
-    
+
     var amy = Ameba.create();
-    
+
     amy.alive;
     //-> true
-    
+
     LifeForm.prototype.alive = false;
-    
+
     amy.alive
     //-> false
-    
+
     amy.klass.birth();
     //-> 'waaaa waaaa'
-    
+
 #### Pretty Class Reopening
 
     var Puppet = Klass.create();
-    
+
     klass(Puppet, function(self){
       this.initialize: function(){
         ...
       };
-      
+
       self.aNewClassMethod = function(){
         ...
       };
     });
-    
-    
+
+
     klass(Puppet,{
       aNewInstanceMethod: function(){
         ...
       }
     });
-    
+
 #### klass_name
 
   In order to provide pretty toString values, making your Firebug experience that much better, we guess the klass_name from
@@ -113,7 +113,7 @@ Klass.js is a more feature rich implementation of Ruby like Class inheritance in
     var Frog = Klass.create(function(Frog){ ... });
     Frog.klass_name
     //-> 'Frog'
-    
+
     Klass.create('KittyCat',{...}).klass_name
     //-> 'KittyCat'
 
@@ -141,7 +141,7 @@ Klass.js is a more feature rich implementation of Ruby like Class inheritance in
         this.klass.instances.push(this);
         this.name = name;
       };
-      
+
       function getName(){
         return this.name;
       };
@@ -151,52 +151,57 @@ Klass.js is a more feature rich implementation of Ruby like Class inheritance in
         getName: getName
       };
     });
-    
+
     var pedro = Human.create('Pedro');
     //-> Human:instance
-    
+
     Human.findByName('Pedro');
     //-> pedro
-    
+
 
 #### Super
   Prototype's $super works by defining a methods relationship to it's super method
   when it's defined using addMethods. Our $super implementation is a bit more verbose
-  but avoids that extra work and allows you to move Functions around any way you like
-    
+  but avoids that extra work and allows you to move Functions around any way you like.
+
     var Human; // see above example
-    
+
     var FakeHuman = Klass.create(Human, {
-      getName: function(){ 
+      getName: function(){
         return arguments.callee.$super(this)+' the fake human';
       }
     });
-    
-    FakeHuman.create('Bob').getName();
-    //-> "Bob the fake human"
-    
-    var Robot = Klass.create(FakeHuman, function(Robot, instance){
-      // Alias method copies the Robot.prototype.getName function
-      // to Robot.prototype.getModelNumber as well as setting
-      // Robot.prototype.getModelNumber.method_name to 'getName' so that super
-      // knows to crawl up to the corret super method
-      this.aliasMethod('getModelNumber', 'getNaxme');
-    });
-    
-    Robot.create('Bender').getModelNumber();
-    //-> "Bender the fake human"
+
+    FakeHuman.create('Darel').getName();
+    //-> "Darel the fake human"
+
+    FakeHuman.prototype.getTheName = FakeHuman.prototype.getName;
+
+    FakeHuman.create('Mork').getTheName();
+    //-> NoSuperError: no superclass method
+
+    // Alias Method to the rescue!
+    FakeHuman.prototype.aliasMethod('getTheName', 'getName');
+
+    FakeHuman.create('Mork').getTheName();
+    //-> "Mork the fake human"
+
+    // Alias method clones (wraps) the original function and then casts its
+    // property name to the original method's property name at the time of
+    // the aliasing. Function#getSuper knows look for this so it can find
+    // the right super method
 
 #### Extend and Include
   We're also a bit more Ruby like when it comes to mixins.
-  
+
     var MotorVehicle = {
       drive: function(){ return "driving"; }
     }
-    
+
     var Drivables = {
       createTruck: function(){ return this.create("truck"); }
     }
-    
+
     var Car = Klass.create(function(Car){
       this.initialize = function(type){
         this.type = type;
@@ -204,9 +209,9 @@ Klass.js is a more feature rich implementation of Ruby like Class inheritance in
       Car.include(MotorVehicle);
       Car.extend(Drivables);
     });
-    
+
     Car.create().drive();
     //-> 'driving'
-    
+
     Car.createTruck();
     //-> [Car:instance type=truck klass=Car]

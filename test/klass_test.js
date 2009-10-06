@@ -193,7 +193,7 @@ new Test.Unit.Runner({
   },
 
   test_that_Function_super_throws_error_when_called_out_of_klass_context: function(){
-    this.assertRaise('TypeError', function(){
+    this.assertRaise('Error', function(){
       arguments.callee.$super();
     });
     this.assertRaise('Error', function(){
@@ -226,6 +226,34 @@ new Test.Unit.Runner({
       BigDog.callAll();
     });
     this.assertEqual(14, BigDog.callAll());
+
+  },
+
+  test_that_super_throws_an_error_when_not_passed_a_context_object: function(){
+    var Supers = {
+      callSuper: function(){ return arguments.callee.$super(); },
+      callGetSuper: function(){ return arguments.callee.getSuper(); }
+    };
+
+    var Hero = Klass.create();
+    Hero.extend(Supers);
+    Hero.include(Supers);
+
+    this.assertRaise('Error', function(){
+      Hero.callSuper();
+    });
+
+    this.assertRaise('Error', function(){
+      Hero.callGetSuper();
+    });
+
+    this.assertRaise('Error', function(){
+      Hero.create().callSuper();
+    });
+
+    this.assertRaise('Error', function(){
+      Hero.create().callGetSuper();
+    });
 
   },
 
@@ -384,6 +412,27 @@ new Test.Unit.Runner({
     this.assertRaise('TypeError', function(){
       Father.create().fresh();
     });
-  }
+  },
+
+
+  test_that_super_magically_works_because_for_loops_loop_in_the_order_properties_were_assigned: function(){
+
+    var Human = Klass.create({
+      getName: function(){
+        return 'frank';
+      }
+    });
+
+    var FakeHuman = Klass.create(Human, {
+      getName: function(){
+        return arguments.callee.$super(this)+' the fake human';
+      }
+    });
+
+    FakeHuman.prototype.getTheName = FakeHuman.prototype.getName;
+
+    this.assert('Mork the fake human',FakeHuman.create('Mork').getTheName());
+
+  },
 
 });
