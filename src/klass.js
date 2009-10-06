@@ -19,23 +19,18 @@
       parent = emptyFunction;
     }
     return (child instanceof parent);
-  };
-
-  function toArray(iterable) {
-    if (!iterable) return [];
-    if ('toArray' in Object(iterable)) return iterable.toArray();
-    var length = iterable.length || 0, results = new Array(length);
-    while (length--) results[length] = iterable[length];
-    return results;
-  }
+  }; 
+  Object.inheritorOf = inheritorOf;
 
   function isKlass(object){
     return inheritorOf(Klass, object);
   }
+  Object.isKlass = isKlass;
 
   function isKlassInstance(object){
     return (isKlass(object.klass) && inheritorOf(object.klass.prototype, object));
   }
+  Object.isKlassInstance = isKlassInstance;
 
   function getFunctionArgumentNames(method) {
     var names = method.toString().match(/^[\s\(]*function[^(]*\(([^)]*)\)/)[1]
@@ -44,11 +39,8 @@
     return names.length == 1 && !names[0] ? [] : names;
   }
 
-  function capitalize(string){
-    return string.charAt(0).toUpperCase() + string.substring(1);
-  }
-
   klass.object = {
+    extend: function extend(object){ return _extend(this, object); },
     aliasMethod: function aliasMethod(alias_method_name, method_name){
       var _method = this[method_name];
       var alias = function(){ return _method.apply(this, arguments); };
@@ -65,7 +57,6 @@
     toString: function toObject(){ return "[object "+(this.klass_name||'AnonymousKlass')+"]"; },
     valueOf: function valueOf(){ return this; },
     subklasses: [],
-    extend: function extend(object){ return _extend(this, object); },
     include: function include(object){ _extend(this.prototype, object); return this; }
   });
 
@@ -95,19 +86,20 @@
     return new klassInstance(arguments);
   }
 
+  var VALID_KLASS_NAME = /^[A-Z]+[a-zA-Z_$]+$/;
   function findKlassNameInDefinitions(definitions){
     for (var i=0; i < definitions.length; i++) {
       var def = definitions[i];
       if (typeof def === 'function')
         var klass_name = getFunctionArgumentNames(def)[0];
-      if (typeof def === 'string' && def.length && def.match(/^[a-zA-Z_$]+$/))
+      if (typeof def === 'string' && def.length)
         var klass_name = def;
-      if (klass_name) return capitalize(klass_name);
+      if (klass_name && klass_name.match(VALID_KLASS_NAME)) return klass_name;
     };
   }
 
   function createKlass(superklass){
-    var defs = toArray(arguments);
+    var defs = Array.prototype.slice.call(arguments);
     var superklass = isKlass(defs[0]) ? defs.shift() : Klass;
     var _klass = cloneWithInheritance(superklass);
     _klass.superklass = superklass;
@@ -129,24 +121,16 @@
     return Klass.create.apply(Klass, arguments);
   };
 
-
-  // documented in readme
   function klass(_klass){
     if (!isKlass(_klass)) throw new Error('expected instance of Klass');
     var definitions = Array.prototype.slice.apply(arguments, [1]);
     for (var i=0; i < definitions.length; i++) {
       var definition = definitions[i];
-      if (typeof definition === 'function') definition = definition.apply(_klass, [_klass, _klass.prototype]) || {};
+      if (typeof definition === 'function') definition = definition.apply(_klass.prototype, [_klass, _klass.prototype]) || {};
       if (typeof definition === 'object') _extend(_klass.prototype, definition);
     };
   };
   window.klass = klass;
-
-  function super_not_found_error(error){
-    error.message = "super: no superclass method";
-    error.name = "NoSuperError";
-    return error;
-  }
 
   Function.prototype.getSuper = function getSuper(context){
     var klass_context = isKlass(context) ? true :
@@ -169,7 +153,11 @@
     if (args && Object.prototype.toString.apply(args) !== "[object Array]")
       throw new TypeError('second argument to Function.prototype.$super must be an array');
     var super_method = this.getSuper(context);
-    if (!super_method) throw super_not_found_error(new Error());
+    if (!super_method){
+      var error = new Error("super: no superclass method");
+      error.name = "NoSuperError";
+      throw error;
+    }
     return super_method.apply(context,args);
   };
 

@@ -61,15 +61,11 @@ new Test.Unit.Runner({
     this.assertEqual(Frog.subklasses.last(), BigFrog);
   },
 
-  test_that_infered_klass_names_are_capitolized: function(){
-    this.assertEqual('LowerCase', Klass.create('lowerCase').klass_name);
-    this.assertEqual('LowerCase', Klass.create(function(lowerCase){}).klass_name);
-  },
-
-  test_that_klass_names_defined_with_a_string_do_not_have_invalid_charactors: function(){
-    this.assertEqual('LowerCase', Klass.create('lowerCase').klass_name);
-    this.assertEqual('LowerCase', Klass.create(function(lowerCase){}).klass_name);
-    this.assertEqual(undefined, Klass.create('with spaces').klass_name);
+  test_that_infered_klass_names_are_only_infered_when_capitolized: function(){
+    this.assertEqual(undefined, Klass.create('lowerCase').klass_name);
+    this.assertEqual(undefined, Klass.create(function(lowerCase){}).klass_name);
+    this.assertEqual('UpperCase', Klass.create('UpperCase').klass_name);
+    this.assertEqual('UpperCase', Klass.create(function(UpperCase){}).klass_name);
   },
 
   test_that_creating_a_klass_with_inheritance_sets_superklass_to_the_given_klass: function(){
@@ -90,15 +86,15 @@ new Test.Unit.Runner({
   },
 
   test_that_klass_definitions_can_be_functions: function(){
-    var Frog = Klass.create(function Frog(Frog,Instance){
-      this.loves = 'cheese';
+    var Frog = Klass.create(function Frog(Frog, Instance){
       Frog.killAll = function(){return 'dead frogs';};
+      this.loves = 'cheese';
       Instance.poops = true;
       return {fun:'times'};
     });
 
-    this.assertEqual('cheese', Frog.loves);
     this.assertEqual('dead frogs', Frog.killAll());
+    this.assertEqual('cheese', Frog.create().loves);
     this.assert(Frog.create().poops);
     this.assertEqual('times', Frog.create().fun);
   },
@@ -119,9 +115,8 @@ new Test.Unit.Runner({
       the_klass = Building;
       the_instance = instance;
     });
-    this.assertEqual(the_this, Building);
+    this.assertEqual(the_this, Building.prototype);
     this.assertEqual(the_klass, Building);
-    this.assertEqual(the_this.prototype, Building.prototype);
     this.assertEqual(the_instance, Building.prototype);
   },
 
@@ -285,12 +280,12 @@ new Test.Unit.Runner({
 
   test_that_alias_method_works: function(){
 
-    var Country = Klass.create(function Country(){
-      this.count = function(){ return 5; };
-      this.aliasMethod('size', 'count');
+    var Country = Klass.create(function (Country){
+      Country.count = function(){ return 5; };
+      Country.aliasMethod('size', 'count');
 
-      this.prototype.war = function(){ return 'waring'; };
-      this.prototype.aliasMethod('fight', 'war');
+      this.war = function(){ return 'waring'; };
+      this.aliasMethod('fight', 'war');
     });
     this.assertEqual(5, Country.count());
     this.assertEqual(5, Country.size());
@@ -299,14 +294,14 @@ new Test.Unit.Runner({
   },
 
   test_that_aliased_methods_are_not_overwrited_when_the_original_method_is: function(){
-    var Container = Klass.create(function(){
-      this.find = function(){ return 12; };
+    var Container = Klass.create(function(Container){
+      Container.find = function(){ return 12; };
     });
     this.assertEqual(12, Container.find());
 
-    var Bucket = Klass.create(Container, function(){
-      this.aliasMethod('lookFor', 'find');
-      this.find = function(){ return 40; };
+    var Bucket = Klass.create(Container, function(Bucket){
+      Bucket.aliasMethod('lookFor', 'find');
+      Bucket.find = function(){ return 40; };
     });
     this.assertEqual(12, Bucket.lookFor());
     this.assertEqual(40, Bucket.find());
@@ -317,11 +312,11 @@ new Test.Unit.Runner({
     var Animal = Klass.create({
       speak: function(words){ return words; }
     });
-    var Dog = Klass.create(Animal, function Dog(){
-      this.prototype.speak = function(words){
+    var Dog = Klass.create(Animal, function(Dog){
+      this.speak = function(words){
         return arguments.callee.$super(this, ['WOOF '+words+' WOOF']);
       };
-      this.prototype.aliasMethod('bark','speak');
+      this.aliasMethod('bark','speak');
     });
     this.assertEqual('WOOF ball? WOOF', Dog.create().bark('ball?'));
   },
@@ -378,7 +373,7 @@ new Test.Unit.Runner({
       return {call:call2, brandNew:brandNew};
     });
 
-    klass(Father, function(){ with(this.prototype){
+    klass(Father, function(){ with(this){
       aliasMethod('getOverHere','comeHere');
       aliasMethod('summon','call');
       aliasMethod('fresh','brandNew');
