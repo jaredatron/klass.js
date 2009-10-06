@@ -182,14 +182,37 @@ new Test.Unit.Runner({
     var Insect = Klass.create(LifeForm);
     var Dog = Klass.create(Animal);
     var Cockroach = Klass.create(Insect);
-
+  
     this.assert(Dog.create().isA(LifeForm));
     this.assert(Dog.create().isA(Animal));
     this.assert(!Dog.create().isA(Insect));
-
+  
     this.assert(Cockroach.create().isA(LifeForm));
     this.assert(Cockroach.create().isA(Insect));
     this.assert(!Cockroach.create().isA(Animal));
+  },
+  
+  test_that_a_class_instance_is_not_an_instance_of_klass: function(){
+    this.assert(Object.instanceOf(Array, []), 'An Array should be an instance of Array');
+    
+    var Thing = function(){};
+    var a_thing = new Thing;
+    this.assert(Object.instanceOf(Thing, a_thing), 'a_thing should be an instance of Thing');
+    this.assert(Object.instanceOf(Thing.prototype, a_thing), 'a_thing should be an instance of Thing.prototype');
+
+    var Human = Klass.create('Human');
+    var Car = Klass.create(Human,'Car');
+    
+    this.assert(  Object.instanceOf( Klass, Human          ), 'Human should be an instance of Klass');
+    this.assert(  Object.instanceOf( Klass, Car            ), 'Car should be an instance of Klass');
+    this.assert( !Object.instanceOf( Human, Car            ), 'Car should not be an instance of Human');
+    this.assert(  Object.instanceOf( Human, Human.create() ), 'An instance of Human should be an instance of Human');
+    this.assert(  Object.instanceOf( Human, Car.create()   ), 'An instance of Car should be an instance of Human');
+    this.assert(  Object.instanceOf(   Car,  Car.create()  ), 'An instance of Car should be an instance of Car');
+    this.assert( !Object.instanceOf( Klass, Car.create()   ), 'An instance of Car should not be an instance of Klass');
+    this.assert( !Object.instanceOf( Klass, Human.create() ), 'An instance of Human should not be an instance of Klass');
+    this.assert( !Human.create().instanceOf(Klass),           'A Human instance should not be an instance of Klas');
+    this.assert( !Car.create().instanceOf(Klass),             'A Car instance should not be an instance of Klas');
   },
 
   test_that_Function_super_throws_error_when_called_out_of_klass_context: function(){

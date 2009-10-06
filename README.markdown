@@ -55,6 +55,44 @@ Klass.js is a more feature rich implementation of Ruby like Class inheritance in
 ### Now. Where we differ
     
     
+#### Create vs. new and instanceof
+
+  Why do we use a create method rather then Javascript's built in new operator?
+  
+  **The short answer**: *Objects that inherit from other objects cannot also be functions.*
+  
+  So in order for Klass objects to inherit from their parents they need to be plain old objects and therefor cannot be constructors.
+  Search the source for `function createKlassInstance` to understand how this magic works.
+
+    var Human = Klass.create('Human');
+
+    Human instanceof Klass;
+    //-> TypeError: invalid 'instanceof' operand Klass
+    
+    Object.instanceOf(Klass, Human);
+    //-> true
+    
+    Human.isA(Klass);
+    //-> true
+
+    var paul = Human.create();
+
+    paul instanceof Human;
+    //-> TypeError: invalid 'instanceof' operand Human
+
+    Object.instanceOf(Human, paul);
+    //-> true
+    
+    paul.instanceOf(Human);
+    //-> true
+    
+    paul.instanceOf(Klass);
+    //-> false
+
+    paul.isA(Human);
+    //-> true
+    
+    
 #### Class and Instance inheritance
 
     var LifeForm = Klass.create();

@@ -21,6 +21,14 @@
     return (child instanceof parent);
   }; 
   Object.inheritorOf = inheritorOf;
+  
+  function instanceOf(parent, child){
+    if (typeof parent == 'function') return child instanceof parent;
+    if (parent == Klass && isKlassInstance(child)) return false;
+    if (isKlass(parent)) return inheritorOf(parent.prototype, child);
+    return inheritorOf(parent, child);
+  };
+  Object.instanceOf = instanceOf;
 
   function isKlass(object){
     return inheritorOf(Klass, object);
@@ -60,22 +68,32 @@
     include: function include(object){ _extend(this.prototype, object); return this; }
   });
 
-  function instanceOf(_klass){ return inheritorOf(_klass.prototype, this); }
+
 
   Klass.prototype = cloneWithInheritance(klass.object);
-  _extend(Klass.prototype, {
-    klass: Klass,
-    toString: function toObject(){
+  _extend(Klass.prototype, (function() {
+    function toString(){
       return this.klass.prototype === this ?
         Object.prototype.toString(this):
         "[object "+(this.klass.klass_name||'AnonymousKlass')+":instance]";
-    },
-    valueOf: function valueOf(){ return this; },
-    extend: function extend(object){ return _extend(this, object); },
-    isA: instanceOf,
-    kindOf: instanceOf,
-    instanceOf: instanceOf
-  });
+    }
+    
+    function valueOf(){ return this; }
+     
+    function extend(object){ return _extend(this, object); }
+
+    function instanceOf(_klass){ return Object.instanceOf(_klass, this); }
+
+    return {
+      klass:      Klass,
+      toString:   toString,
+      valueOf:    valueOf,
+      extend:     extend,
+      isA:        instanceOf,
+      kindOf:     instanceOf,
+      instanceOf: instanceOf
+    };
+  })());
 
   function klassInstance(args){
     if ('initialize' in this) return this.initialize.apply(this,args);
