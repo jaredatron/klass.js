@@ -164,11 +164,32 @@ new Test.Unit.Runner({
     Table.extend({build:'building'});
     this.assertEqual('building', Table.build);
   },
+
   test_that_klass_include_method_extends_the_klass_prototype_object: function(){
     var Table = Klass.create();
     Table.include({legs:4});
     this.assertEqual(4, Table.create().legs);
   },
+
+  test_that_klass_extend_method_extends_the_klass_object_and_the_klass_prototype_object: function(){
+    var Openable = {
+      findAllOpen: function(){},
+      findAllClosed: function(){},
+      prototype: {
+        open: function(){},
+        close: function(){}
+      }
+    };
+
+    var Box = Klass.create();
+    Box.extend(Openable);
+
+    this.assertIdentical(Openable.findAllOpen,     Box.findAllOpen);
+    this.assertIdentical(Openable.findAllClosed,   Box.findAllClosed);
+    this.assertIdentical(Openable.prototype.open,  Box.prototype.open);
+    this.assertIdentical(Openable.prototype.close, Box.prototype.close);
+  },
+
   test_that_klass_intance_extend_method_extends_the_klass_object: function(){
     var Table = Klass.create();
     var end_table = Table.create();

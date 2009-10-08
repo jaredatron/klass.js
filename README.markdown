@@ -254,3 +254,30 @@ Klass.js is a more feature rich implementation of Ruby like Class inheritance in
 
     Car.createTruck();
     //-> [Car:instance type=truck klass=Car]
+
+#### Modules
+  Modules are simply a objects that when extended onto a klass have all their properties copied the
+  klass object. Additionally if the module has a 'prototype' property defined it does not overwrite 
+  the klass's current prototype object but rather is extended upon it. This allows modules to have
+  klass and instance properties.
+
+    var Openable = {
+      findAllOpen: function(){},
+      findAllClosed: function(){},
+      prototype: {
+        open: function(){},
+        close: function(){}
+      }
+    };
+
+    var Box = Klass.create();
+    Box.extend(Openable);
+
+    Openable.findAllOpen === Box.findAllOpen;
+    //-> true
+    Openable.findAllClosed === Box.findAllClosed;
+    //-> true
+    Openable.prototype.open === Box.create().open;
+    //-> true
+    Openable.prototype.close === Box.create().close;
+    //-> true

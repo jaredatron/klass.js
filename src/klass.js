@@ -48,7 +48,6 @@
   }
 
   klass.object = {
-    extend: function extend(object){ return _extend(this, object); },
     aliasMethod: function aliasMethod(alias_method_name, method_name){
       var _method = this[method_name];
       var alias = function(){ return _method.apply(this, arguments); };
@@ -65,7 +64,17 @@
     toString: function toObject(){ return "[object "+(this.klass_name||'AnonymousKlass')+"]"; },
     valueOf: function valueOf(){ return this; },
     subklasses: [],
-    include: function include(object){ _extend(this.prototype, object); return this; }
+    include: function include(object){ _extend(this.prototype, object); return this; },
+    extend: function extend(object){
+      for (var property in object){
+        if (property == 'prototype'){
+          this.include(object[property]);
+        }else{
+          this[property] = object[property];
+        }
+      }
+      return this;
+    }
   });
 
 
