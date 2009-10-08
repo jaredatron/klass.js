@@ -37,12 +37,12 @@ new Test.Unit.Runner({
     klass(Frog,{
       numbers:numbers
     });
-    this.assertEqual(numbers, Frog.create().numbers);
+    this.assertIdentical(numbers, Frog.create().numbers);
   },
 
 
   test_that_creating_a_klass_without_inheritance_sets_superklass_Klass: function(){
-    this.assertEqual(Klass, Klass.create().superklass);
+    this.assertIdentical(Klass, Klass.create().superklass);
   },
 
   test_that_when_klass_name_is_set_toString_reflects_that: function(){
@@ -55,15 +55,15 @@ new Test.Unit.Runner({
 
   test_that_new_klasses_are_pushed_onto_their_superklasses_subklasses_array: function(){
     var Frog = Klass.create();
-    this.assertEqual(Klass.subklasses.last(), Frog);
+    this.assertIdentical(Klass.subklasses.last(), Frog);
     var BigFrog = Klass.create(Frog);
-    this.assertNotEqual(Klass.subklasses.last(), BigFrog);
-    this.assertEqual(Frog.subklasses.last(), BigFrog);
+    this.assertNotIdentical(Klass.subklasses.last(), BigFrog);
+    this.assertIdentical(Frog.subklasses.last(), BigFrog);
   },
 
   test_that_infered_klass_names_are_only_infered_when_capitolized: function(){
-    this.assertEqual(undefined, Klass.create('lowerCase').klass_name);
-    this.assertEqual(undefined, Klass.create(function(lowerCase){}).klass_name);
+    this.assertIdentical(undefined, Klass.create('lowerCase').klass_name);
+    this.assertIdentical(undefined, Klass.create(function(lowerCase){}).klass_name);
     this.assertEqual('UpperCase', Klass.create('UpperCase').klass_name);
     this.assertEqual('UpperCase', Klass.create(function(UpperCase){}).klass_name);
   },
@@ -71,7 +71,7 @@ new Test.Unit.Runner({
   test_that_creating_a_klass_with_inheritance_sets_superklass_to_the_given_klass: function(){
     var Frog = Klass.create();
     var BigFrog = Klass.create(Frog);
-    this.assertEqual(Frog, BigFrog.superklass);
+    this.assertIdentical(Frog, BigFrog.superklass);
   },
 
   test_that_when_instantiating_a_klass_instance_its_klass_value_is_set_to_its_parent_klass: function(){
@@ -115,9 +115,9 @@ new Test.Unit.Runner({
       the_klass = Building;
       the_instance = instance;
     });
-    this.assertEqual(the_this, Building.prototype);
-    this.assertEqual(the_klass, Building);
-    this.assertEqual(the_instance, Building.prototype);
+    this.assertIdentical(the_this, Building.prototype);
+    this.assertIdentical(the_klass, Building);
+    this.assertIdentical(the_instance, Building.prototype);
   },
 
   test_that_modification_to_parent_klass_are_reflected_in_child_klass: function(){
@@ -203,19 +203,19 @@ new Test.Unit.Runner({
     var Insect = Klass.create(LifeForm);
     var Dog = Klass.create(Animal);
     var Cockroach = Klass.create(Insect);
-  
+
     this.assert(Dog.create().isA(LifeForm));
     this.assert(Dog.create().isA(Animal));
     this.assert(!Dog.create().isA(Insect));
-  
+
     this.assert(Cockroach.create().isA(LifeForm));
     this.assert(Cockroach.create().isA(Insect));
     this.assert(!Cockroach.create().isA(Animal));
   },
-  
+
   test_that_a_class_instance_is_not_an_instance_of_klass: function(){
     this.assert(Object.instanceOf(Array, []), 'An Array should be an instance of Array');
-    
+
     var Thing = function(){};
     var a_thing = new Thing;
     this.assert(Object.instanceOf(Thing, a_thing), 'a_thing should be an instance of Thing');
@@ -223,7 +223,7 @@ new Test.Unit.Runner({
 
     var Human = Klass.create('Human');
     var Car = Klass.create(Human,'Car');
-    
+
     this.assert(  Object.instanceOf( Klass, Human          ), 'Human should be an instance of Klass');
     this.assert(  Object.instanceOf( Klass, Car            ), 'Car should be an instance of Klass');
     this.assert( !Object.instanceOf( Human, Car            ), 'Car should not be an instance of Human');
@@ -325,7 +325,7 @@ new Test.Unit.Runner({
   test_that_super_traverses_past_a_non_matching_parent_all_the_way_to_klass: function(){
 
     var GrandChild = Klass.create(Klass.create(Klass.create(Klass.create(Klass.create()))));
-    this.assertEqual(Klass, GrandChild.superklass.superklass.superklass.superklass.superklass);
+    this.assertIdentical(Klass, GrandChild.superklass.superklass.superklass.superklass.superklass);
     Klass.pumpIt = function(){ return 'pumping'; };
     this.assertEqual('pumping', GrandChild.pumpIt());
 
@@ -477,6 +477,6 @@ new Test.Unit.Runner({
 
     this.assert('Mork the fake human',FakeHuman.create('Mork').getTheName());
 
-  },
+  }
 
 });
