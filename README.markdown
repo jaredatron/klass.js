@@ -2,7 +2,85 @@
 
 Klass.js is a more feature rich implementation of Ruby like Class inheritance in Javascript. The main advantage that Klass.js has over Prototype's Ruby like Class implementation is both Class and Instance based inheritance.
 
-##Examples
+## Example
+
+    var Car = Klass.create('Car');
+    
+    Car.prototype.initialize = function(color, size){
+      this.color = color;
+      this.size = size;
+    };
+    
+    Car.prototype.getSize = function(){ return this.size; };
+    Car.prototype.getColor = function(){ return this.color; };
+    
+    Truck = Klass.create(Car, 'Truck');
+    
+    Truck.prototype.initialize = function(color){
+      arguments.callee.callSuper(this, color, 'huge');
+    };
+    
+    
+    var blue_truck = Truck.create('blue');
+    blue_truck.getSize();
+    //-> 'huge'
+    blue_truck.getColor();
+    //-> 'blue'
+    
+    // adding an instance method that uses klass names
+    Car.prototype.describe = function(){
+      return 'a '+this.size+' '+this.color+' '+this.klass.klass_name;
+    }
+    
+    blue_truck.describe();
+    //-> 'a huge blue Truck'
+    
+    
+    // Adding a class method to Truck's Parent
+    Car.createRed = function(size){
+      return this.create('red', size);
+    };
+    
+    var red_truck = Truck.createRed();
+    red_truck.getColor();
+    //-> 'red'
+    red_truck.getSize();
+    //-> 'huge'
+    
+    
+    // the above example could also be writen like this
+    
+    var Car = Klass.create(function(Car){
+
+      Car.createRed = function(size){
+        return this.create('red', size);
+      };
+      
+      function initialize(color, size){
+        this.color = color;
+        this.size = size;
+      };
+      
+      function getSize(){ return this.size; };
+      
+      function getColor(){ return this.color; };
+      
+      return {
+        initialize: initialize,
+        getSize:    getSize,
+        getColor:   getColor
+      }
+    });
+    
+    var Truck = Klass.create(Car, function(Truck){
+      this.initialize = function(color){
+        arguments.callee.callSuper(this, color, 'huge');
+      };
+    });
+    
+    
+
+## Klass.js vs. Prototype
   Klass.js supports a syntax very similar to Prototype's Class. Compare the following code to the exmaples given in the Prototype documentation:
   <http://api.prototypejs.org/language/class.html#addmethods-instance_method>
 
