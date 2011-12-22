@@ -15,7 +15,7 @@
     if (typeof superklass !== 'undefined' && typeof superklass.superklass === 'undefined')
       extension = superklass, superklass = undefined;
 
-    try{ klass = eval(name); }catch(e){};
+    try{ klass = eval('this.'+name); }catch(e){};
     if (typeof klass !== 'undefined'){
       // TODO check for superclass mismatch;
     }else{
@@ -35,7 +35,7 @@
 
       if (name){
         klass.name = name;
-        eval(name+" = klass");
+        eval('this.'+name+' = klass');
       }
     }
 
