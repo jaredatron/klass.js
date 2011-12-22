@@ -10,13 +10,12 @@
     var klass, constructor, classname;
 
     if (typeof name !== 'string')
-      extension = superklass, superklass = name, name = undefined
+      extension = superklass, superklass = name, name = undefined;
 
     if (typeof superklass !== 'undefined' && typeof superklass.superklass === 'undefined')
-      extension = superklass, superklass = undefined
+      extension = superklass, superklass = undefined;
 
-    superklass || (superklass = Klass.prototype)
-
+    superklass || (superklass = Klass.prototype);
 
     classname = name ? name.match(/\.?([^\.]*)$/)[1] : 'AnonymousKlass'
     constructor = eval('(function '+classname+'(){})');
@@ -53,7 +52,9 @@
     $super: function(property, args) {
       var func = this.__super__[property];
       if (typeof func !== 'function') throw "no superklass function `"+property+"`";
-      this.__super__ = this.__super__.__super__
+      if (Object.prototype.toString.call(args) !== "[object Arguments]")
+        args = Array.prototype.slice.call(arguments, 1);
+      this.__super__ = this.__super__.__super__;
       try{
         return func.apply(this, args);
       }finally{

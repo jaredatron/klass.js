@@ -57,24 +57,51 @@ describe("Klass", function() {
   });
 
   describe("#$super", function(){
-    var A, B, C;
-    A = Klass(function() {
-      this.concat = function(content){
-        return "A:"+content;
-      }
+    it("should should work", function() {
+      var A, B, C;
+      A = Klass(function() {
+        this.concat = function(content){
+          return "A:"+content;
+        }
+      });
+      B = Klass(A, function() {
+        this.concat = function(content){
+          return this.$super('concat', "B:"+content);
+        }
+      });
+      C = Klass(B, function() {
+        this.concat = function(content){
+          return this.$super('concat', "C:"+content);
+        }
+      });
+      expect(C.create().concat('BOOSH')).toEqual('A:B:C:BOOSH');
     });
-    B = Klass(A, function() {
-      this.concat = function(content){
-        return this.$super('concat', ["B:"+content]);
-      }
+    it("should detect argument objects", function() {
+      var A, B, C;
+      A = Klass(function() {
+        this.concat = function(a,b,c){
+          return [a,b,c];
+        }
+      });
+      B = Klass(A, function() {
+        this.concat = function(a,b,c){
+          return this.$super('concat', arguments);
+        }
+      });
+      C = Klass(B, function() {
+        this.concat = function(a,b,c){
+          return this.$super('concat', a, b, c);
+        }
+      });
+      D = Klass(C, function() {
+        this.concat = function(a,b,c){
+          return this.$super('concat', [a, b, c]);
+        }
+      });
+      expect(B.create().concat('x','y','z')).toEqual(['x','y','z']);
+      expect(C.create().concat('x','y','z')).toEqual(['x','y','z']);
+      expect(D.create().concat('x','y','z')).toEqual([['x','y','z'], undefined, undefined]);
     });
-    C = Klass(B, function() {
-      this.concat = function(content){
-        return this.$super('concat', ["C:"+content]);
-      }
-    });
-
-    expect(C.create().concat('BOOSH')).toEqual('A:B:C:BOOSH');
   });
 
   describe("inheritance", function() {
