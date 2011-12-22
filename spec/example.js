@@ -3,7 +3,7 @@ Klass(function(){
 });
 
 Klass('Animal', function(){
-  Animal.COLORS = ['red','blue'];
+  this.klass.COLORS = ['red','blue'];
   this.initialize = function(name) {
     this.name = name;
   };
@@ -11,7 +11,7 @@ Klass('Animal', function(){
 
 Klass('Human', Animal, function(){
   this.initialize = function(firstName, lastName) {
-    this.$super('initialize', [firstName]);
+    this.$super('initialize', firstName);
     this.lastName = lastName;
   };
 });

@@ -15,24 +15,30 @@
     if (typeof superklass !== 'undefined' && typeof superklass.superklass === 'undefined')
       extension = superklass, superklass = undefined;
 
-    superklass || (superklass = Klass.prototype);
+    try{ klass = eval(name); }catch(e){};
+    if (typeof klass !== 'undefined'){
+      // TODO check for superclass mismatch;
+    }else{
+      superklass || (superklass = Klass.prototype);
 
-    classname = name ? name.match(/\.?([^\.]*)$/)[1] : 'AnonymousKlass'
-    constructor = eval('(function '+classname+'(){})');
+      classname = name ? name.match(/\.?([^\.]*)$/)[1] : 'AnonymousKlass'
+      constructor = eval('(function '+classname+'(){})');
 
-    constructor.prototype = superklass;
-    klass = new constructor;
-    klass.superklass = superklass;
+      constructor.prototype = superklass;
+      klass = new constructor;
+      klass.superklass = superklass;
 
-    constructor.prototype = klass.prototype
-    klass.prototype = new constructor;
-    klass.prototype.__super__ = superklass.prototype;
-    klass.prototype.klass = klass;
+      constructor.prototype = klass.prototype
+      klass.prototype = new constructor;
+      klass.prototype.__super__ = superklass.prototype;
+      klass.prototype.klass = klass;
 
-    if (name){
-      klass.name = name;
-      eval(name+" = klass");
+      if (name){
+        klass.name = name;
+        eval(name+" = klass");
+      }
     }
+
     klass.prototype.extend(extension);
 
     return klass;
@@ -60,6 +66,10 @@
       }finally{
         delete this.__super__;
       }
+    },
+
+    keys: function() {
+      return Object.keys(this);
     }
   }
 
@@ -68,7 +78,6 @@
   Klass.prototype.prototype = Object.create(Module);
 
   Klass.prototype.extend({
-    KLASS_PROTOTYPE: true,
     toString: function() { return this.name; },
     create: function() {
       var instance = Object.create(this.prototype);
@@ -78,11 +87,4 @@
     }
   });
 
-  Klass.prototype.prototype.extend({
-    KLASS_PROTOTYPE_PROTOTYPE: true
-  });
-
 }(this);
-
-
-
