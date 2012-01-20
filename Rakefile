@@ -9,10 +9,14 @@ require 'closure-compiler'
 require 'pathname'
 require 'Launchy'
 
-ROOT        = Pathname.new(File.expand_path(File.dirname(__FILE__)))
-SRC         = ROOT + 'src/klass.js'
-PKG         = ROOT + 'pkg/klass.js'
-SPEC_RUNNER = ROOT + 'spec/SpecRunner.html'
+ROOT              = Pathname(File.expand_path(File.dirname(__FILE__)))
+SOURCE            = ROOT + 'src/klass.js'
+PACKAGE           = ROOT + 'pkg/klass.js'
+SPEC_RUNNER       = ROOT + 'spec/SpecRunner.html'
+FIXTURES          = ROOT + 'spec/fixtures.js'
+COMPILED_FIXTURES = ROOT + 'tmp/fixtures.js'
+
+task :default => :test
 
 namespace :doc do
   desc "Builds the documentation."
@@ -27,13 +31,19 @@ namespace :doc do
 end
 
 task :build do
-  source = SRC.read
-  compressed_source = Closure::Compiler.new.compile(source)
-  PKG.parent.mkdir unless PKG.parent.exist?
-  PKG.open('w'){|f| f.write(compressed_source) }
+  compile(SOURCE,PACKAGE);
 end
 
 task :test => :build do
+  compile(FIXTURES,COMPILED_FIXTURES);
   # Launchy.open "file://localhost#{SPEC_RUNNER}"
   Launchy::Browser.run "file://localhost#{SPEC_RUNNER}"
+end
+
+
+def compile source, destination
+  destination.parent.mkdir unless destination.parent.exist?
+  Pathname(destination).open('w'){|file|
+    file.write Closure::Compiler.new.compile(Pathname(source).read)
+  }
 end

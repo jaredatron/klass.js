@@ -7,7 +7,7 @@
    * Klass('Name', function(){})
    */
   function Klass(name, superklass, extension) {
-    var klass, constructor, classname;
+    var klass, constructor, classname, parents, parent = this;
 
     if (typeof name !== 'string')
       extension = superklass, superklass = name, name = undefined;
@@ -35,7 +35,14 @@
 
       if (name){
         klass.name = name;
-        eval('this.'+name+' = klass');
+        parents = name.split('.');
+        name = parents.pop();
+        while(parents.length > 0){
+          parent = parent[parents[0]];
+          if (typeof parent === 'undefined') throw new TypeError(parents[0]+' is not defined');
+          parents.shift();
+        }
+        parent[name] = klass;
       }
     }
 

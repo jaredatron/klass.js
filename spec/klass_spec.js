@@ -29,6 +29,14 @@ describe("Klass", function() {
       expect(Foo.Bar).toBeTruthy();
     });
 
+    it("should throw a doesn not exist TypeError", function() {
+      expect(function(){ Klass('I.Dont.Exist') }).toThrow(new TypeError('I is not defined'));
+      I = {};
+      expect(function(){ Klass('I.Dont.Exist') }).toThrow(new TypeError('Dont is not defined'));
+      I.Dont = {};
+      expect(function(){ Klass('I.Dont.Exist') }).not.toThrow();
+    });
+
   });
 
   context("when given a function as an extension", function() {
@@ -132,5 +140,7 @@ describe("Klass", function() {
     });
 
   });
+
+
 
 });

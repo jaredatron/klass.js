@@ -1,4 +1,4 @@
-Klass(function(){
+var TempClass = Klass(function(){
 
 });
 
@@ -16,13 +16,12 @@ Klass('Human', Animal, function(){
   };
 });
 
-Klass('Human.Arm', function(){
-
-});
+Klass('Human.Arm');
 
 boford = Animal.create('Boford')
 megan = Human.create('Megan', 'Gritzfeld');
 
+console.log(TempClass);
 console.log(Animal);
 console.log(Human);
 console.log(Human.Arm);
