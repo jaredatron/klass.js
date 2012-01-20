@@ -70,6 +70,15 @@
 
     keys: function() {
       return Object.keys(this);
+    },
+
+    attr: function() {
+      var self = this;
+      Array.prototype.forEach.call(arguments, function(attribute) {
+        self[attribute] = function(value){
+          return (arguments.length === 0) ? this['_'+attribute] : this['_'+attribute] = value;
+        }
+      });
     }
   }
 

@@ -120,4 +120,17 @@ describe("Klass", function() {
     });
   });
 
+  describe("attr", function() {
+    beforeEach(function() {
+      Klass('Can');
+      Can.attr('sizes');
+      Can.prototype.attr('size');
+    });
+    afterEach(function() {
+      delete window.Can;
+      expect('sizes' in Can).toBe(true);
+    });
+
+  });
+
 });
