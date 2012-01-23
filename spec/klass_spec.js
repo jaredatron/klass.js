@@ -11,7 +11,8 @@ describe("Klass", function() {
   });
 
   afterEach(function() {
-    if (window.Foo) delete window.Foo;
+    window.Foo = undefined;
+    window.I = undefined;
   });
 
   it("should exist", function() {
@@ -22,8 +23,12 @@ describe("Klass", function() {
 
   context("when given a name", function() {
 
+    it("should alert", function(){
+      Klass('Foo');
+    });
+
     it("should create a global object of that name", function() {
-      Klass('Foo')
+      Klass('Foo');
       expect(Foo).toBeTruthy();
       Klass('Foo.Bar')
       expect(Foo.Bar).toBeTruthy();
@@ -135,12 +140,10 @@ describe("Klass", function() {
       Can.prototype.attr('size');
     });
     afterEach(function() {
-      delete window.Can;
+      window.Can = undefined;
       expect('sizes' in Can).toBe(true);
     });
 
   });
-
-
 
 });
