@@ -1,30 +1,4 @@
-// taken from github.com/kriskowal/es5-shim
-// ES5 15.2.3.5
-// http://es5.github.com/#x15.2.3.5
-if (!Object.create) {
-  Object.create = function create(prototype, properties) {
-    var object;
-    if (prototype === null) {
-      object = { "__proto__": null };
-    } else {
-      if (typeof prototype != "object") {
-        throw new TypeError("typeof prototype["+(typeof prototype)+"] != 'object'");
-      }
-      var Type = function () {};
-      Type.prototype = prototype;
-      object = new Type();
-      // IE has no built-in implementation of `Object.getPrototypeOf`
-      // neither `__proto__`, but this manually setting `__proto__` will
-      // guarantee that `Object.getPrototypeOf` will work as expected with
-      // objects created using `Object.create`
-      object.__proto__ = prototype;
-    }
-    if (properties !== void 0) {
-      Object.defineProperties(object, properties);
-    }
-    return object;
-  };
-}
+//= require <es5-shim>
 
 /*
  * Klass(function(){})
@@ -33,8 +7,6 @@ if (!Object.create) {
  * Klass('Name', function(){})
  */
 function Klass(name, superklass, extension) {
-  try{
-
   var klass, constructor, classname, parents, parent = this;
 
   if (typeof name !== 'string')
@@ -79,11 +51,6 @@ function Klass(name, superklass, extension) {
   klass.prototype.extend(extension);
 
   return klass;
-
-  }catch(e){
-    console.log('Klass ERROR: '+e);
-    throw e;
-  }
 }
 
 Klass.Module = {
